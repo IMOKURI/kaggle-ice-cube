@@ -1,0 +1,17 @@
+data:
+  dir:
+    working: .
+    input: ../input/icecube-neutrinos-in-deep-ice
+    input_train: ${data.dir.input}/train
+    input_test: ${data.dir.input}/test
+
+  input:
+    - train_meta.parquet
+    - test_meta.parquet
+    - sample_submission.parquet
+    - sensor_geometry.csv
+
+  ice_cube:
+    pulse_table: pulse_table
+    meta_table: meta_table
+
