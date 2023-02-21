@@ -29,6 +29,7 @@ settings:
   amp: True
   multi_gpu: True
 
+  in_kaggle: False
   is_training: False
 
   index_name: event_id

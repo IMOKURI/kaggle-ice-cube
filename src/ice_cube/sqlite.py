@@ -44,7 +44,7 @@ class Sqlite:
             self.add_to_table(df=pulses, table_name=self.pulse_table, is_primary_key=False)
             del pulses  # memory
         del metadata_iter  # memory
-        log.info(f"Conversion Complete!. Database available at\n {self.database_path}")
+        log.info(f"Conversion Complete!. Database available at {self.database_path}")
 
     def add_to_table(
         self,

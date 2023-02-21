@@ -12,15 +12,14 @@ log = logging.getLogger(__name__)
 
 @hydra.main(config_path="config", config_name="main", version_base=None)
 def main(c):
-    utils.basic_environment_info()
-    utils.debug_settings(c)
+    if c.settings.in_kaggle:
+        c.data.dir.pretrained = "/kaggle/input/dynedge-pretrained"
 
+    utils.basic_environment_info()
     utils.fix_seed(utils.choice_seed(c))
 
     test_loader = make_test_dataloader(c)
-
     model = load_pretrained_model(c)
-
     results = model.predict_as_dataframe(
         gpus=[0],
         dataloader=test_loader,
@@ -29,7 +28,6 @@ def main(c):
     )
 
     submission_df = to_submission_df(results)
-
     submission_df.to_csv("submission.csv")
 
     log.info("Done.")

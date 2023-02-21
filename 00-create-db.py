@@ -11,8 +11,6 @@ log = logging.getLogger(__name__)
 @hydra.main(config_path="config", config_name="main", version_base=None)
 def main(c):
     utils.basic_environment_info()
-    utils.debug_settings(c)
-
     utils.fix_seed(utils.choice_seed(c))
 
     s = Sqlite(c)
