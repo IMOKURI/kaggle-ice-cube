@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Any
 
 from graphnet.models import StandardModel
@@ -14,10 +15,12 @@ from graphnet.training.callbacks import PiecewiseLinearLR
 from graphnet.training.loss_functions import VonMisesFisher3DLoss
 from torch.optim.adam import Adam
 
+from .data_loader import make_test_dataloader
+
 log = logging.getLogger(__name__)
 
 
-def build_model(c, train_dataloader: Any) -> StandardModel:
+def build_model(c, dataloader: Any) -> StandardModel:
     """Builds GNN from config"""
     # Building model
     detector = IceCubeKaggle(
@@ -55,8 +58,8 @@ def build_model(c, train_dataloader: Any) -> StandardModel:
         scheduler_kwargs={
             "milestones": [
                 0,
-                len(train_dataloader) / 2,
-                len(train_dataloader) * c.training_params.epoch,
+                len(dataloader) / 2,
+                len(dataloader) * c.training_params.epoch,
             ],
             "factors": [1e-02, 1, 1e-02],
         },
@@ -67,4 +70,22 @@ def build_model(c, train_dataloader: Any) -> StandardModel:
     model.prediction_columns = prediction_columns
     model.additional_attributes = additional_attributes
 
+    return model
+
+
+def load_pretrained_model(
+    c,
+    state_dict_path: str = "dynedge_pretrained_batch_1_to_50/state_dict.pth",
+) -> StandardModel:
+    test_loader = make_test_dataloader(c)
+    model = build_model(c, dataloader=test_loader)
+    # model._inference_trainer = Trainer(config['fit'])
+    model.load_state_dict(os.path.join(c.data.dir.pretrained, state_dict_path))
+    model.prediction_columns = [
+        c.model_params.target + "_x",
+        c.model_params.target + "_y",
+        c.model_params.target + "_z",
+        c.model_params.target + "_kappa",
+    ]
+    model.additional_attributes = ["event_id"]  #'zenith', 'azimuth',  not available in test data
     return model

@@ -1,0 +1,22 @@
+{
+  "id": "imokuri/inference",
+  "id_no": 35293109,
+  "title": "IceCube Inference Notebook",
+  "code_file": "inference.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": false,
+  "keywords": [],
+  "dataset_sources": [
+    "datasets/rasmusrse/dynedge-pretrained",
+    "datasets/speeddemon/hydracore105"
+  ],
+  "kernel_sources": [
+    "code/rasmusrse/graphnet-and-dependencies"
+  ],
+  "competition_sources": [
+    "competitions/icecube-neutrinos-in-deep-ice"
+  ]
+}

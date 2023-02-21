@@ -24,16 +24,16 @@ debug: ## Run training debug mode.
 early-stop: ## Abort training gracefully.
 	@touch abort-training.flag
 
-push: clean-build ## Publish notebook.
+push: clean ## Publish notebook.
 	@rm -f ./notebook/inference.ipynb
-	@python encode.py ./src ./config
-	# @cd ./notebook && kaggle kernels push
+	@python encode.py .
+	@cd ./notebook && kaggle kernels push
 
 push-model: ## Publish models.
 	@cd ./dataset/training && \
 		kaggle datasets version -m $(HEAD_COMMIT)-$(NOW) -r zip
 
-clean: clean-build clean-pyc clean-training ## Remove all build and python artifacts.
+clean: clean-build clean-pyc ## Remove all build and python artifacts.
 
 clean-build: ## Remove build artifacts.
 	@rm -fr build/
@@ -50,13 +50,6 @@ clean-pyc: ## Remove python artifacts.
 
 clean-training: ## Remove training artifacts.
 	@rm -rf ./output ./multirun abort-training.flag
-
-clean-preprocess:  ## Remove preprocess artifacts.
-	@find preprocess -type f -name *.f -exec rm -rf {} \;
-	@find preprocess -type f -name *.npy -exec rm -rf {} \;
-	@find preprocess -type f -name *.pkl -exec rm -rf {} \;
-	@find preprocess -type f -name *.pickle -exec rm -rf {} \;
-	@find preprocess -type f -name *.index -exec rm -rf {} \;
 
 help: ## Show this help.
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_-]+:.*?## / {printf "\033[38;2;98;209;150m%-15s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)

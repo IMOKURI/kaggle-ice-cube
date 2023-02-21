@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 
-def to_submission_df(df, angle_post_fix="_reco", vec_post_fix="") -> pd.DataFrame:
+def to_submission_df(df, angle_post_fix="", vec_post_fix="") -> pd.DataFrame:
     r = np.sqrt(
         df["direction_x" + vec_post_fix] ** 2
         + df["direction_y" + vec_post_fix] ** 2
@@ -17,7 +17,7 @@ def to_submission_df(df, angle_post_fix="_reco", vec_post_fix="") -> pd.DataFram
     )
 
     drop_these_columns = []
-    for column in results.columns:
+    for column in df.columns:
         if column not in ["event_id", "zenith", "azimuth"]:
             drop_these_columns.append(column)
     return df.drop(columns=drop_these_columns).iloc[:, [0, 2, 1]].set_index("event_id")

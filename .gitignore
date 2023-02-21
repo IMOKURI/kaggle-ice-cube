@@ -136,6 +136,7 @@ multirun
 output
 preprocess
 postprocess
+pretrained
 *.db
 
 notebook/inference.ipynb

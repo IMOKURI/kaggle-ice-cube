@@ -29,7 +29,7 @@ settings:
   amp: True
   multi_gpu: True
 
-  is_training: True
+  is_training: False
 
   index_name: event_id
   label_name: label # label  # ** cell_type_num
