@@ -23,7 +23,7 @@ settings:
   print_freq: 100
   # gpus: "0,1"
 
-  debug: True
+  debug: False
   n_debug_data: 0
 
   amp: True

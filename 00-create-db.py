@@ -12,7 +12,6 @@ log = logging.getLogger(__name__)
 def main(c):
     utils.basic_environment_info()
     utils.debug_settings(c)
-    run = utils.setup_wandb(c)
 
     utils.fix_seed(utils.choice_seed(c))
 
@@ -20,8 +19,6 @@ def main(c):
     s.convert_to_sqlite()
 
     log.info("Done.")
-
-    utils.teardown_wandb(c, run, 0, 0)
 
 
 if __name__ == "__main__":
