@@ -15,8 +15,6 @@ from graphnet.training.callbacks import PiecewiseLinearLR
 from graphnet.training.loss_functions import VonMisesFisher3DLoss
 from torch.optim.adam import Adam
 
-from .data_loader import make_test_dataloader
-
 log = logging.getLogger(__name__)
 
 
@@ -75,10 +73,10 @@ def build_model(c, dataloader: Any) -> StandardModel:
 
 def load_pretrained_model(
     c,
+    dataloader,
     state_dict_path: str = "dynedge_pretrained_batch_1_to_50/state_dict.pth",
 ) -> StandardModel:
-    test_loader = make_test_dataloader(c)
-    model = build_model(c, dataloader=test_loader)
+    model = build_model(c, dataloader=dataloader)
     # model._inference_trainer = Trainer(config['fit'])
     model.load_state_dict(os.path.join(c.data.dir.pretrained, state_dict_path))
     model.prediction_columns = [

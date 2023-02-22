@@ -5,7 +5,7 @@ from graphnet.training.utils import make_dataloader, make_train_validation_datal
 
 
 def make_train_dataloader(c):
-    database_path = os.path.join(c.data.dir.working, "train_db.db")
+    database_path = os.path.join(c.data.dir.dataset, f"train_{c.data.ice_cube.train_batch}_db.db")
 
     train_loader, valid_loader = make_train_validation_dataloader(
         db=database_path,
@@ -18,13 +18,14 @@ def make_train_dataloader(c):
         index_column=c.settings.index_name,
         truth_table=c.data.ice_cube.meta_table,
         seed=c.global_params.seed,
+        test_size=0.25,
     )
 
     return train_loader, valid_loader
 
 
 def make_test_dataloader(c):
-    database_path = os.path.join(c.data.dir.working, "test_db.db")
+    database_path = os.path.join(c.data.dir.dataset, "test_db.db")
 
     dataloader = make_dataloader(
         db=database_path,

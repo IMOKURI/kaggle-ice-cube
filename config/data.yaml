@@ -5,6 +5,7 @@ data:
     input_train: ${data.dir.input}/train
     input_test: ${data.dir.input}/test
     pretrained: ${data.dir.working}/pretrained
+    dataset: ${data.dir.working}/dataset
 
   input:
     - train_meta.parquet
@@ -15,4 +16,4 @@ data:
   ice_cube:
     pulse_table: pulse_table
     meta_table: meta_table
-
+    train_batch: 0 # 0-650 step 10

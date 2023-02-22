@@ -3,6 +3,7 @@
 import logging
 import os
 import sqlite3
+from typing import List
 
 import pandas as pd
 import pyarrow.parquet as pq
@@ -17,18 +18,23 @@ class Sqlite:
         if c.settings.is_training:
             self.input_batch_dir = c.data.dir.input_train
             self.metadata_path = os.path.join(c.data.dir.input, "train_meta.parquet")
-            self.database_path = os.path.join(c.data.dir.working, "train_db.db")
+            self.database_path = os.path.join(c.data.dir.dataset, f"train_{c.data.ice_cube.train_batch}_db.db")
         else:
             self.input_batch_dir = c.data.dir.input_test
             self.metadata_path = os.path.join(c.data.dir.input, "test_meta.parquet")
-            self.database_path = os.path.join(c.data.dir.working, "test_db.db")
+            self.database_path = os.path.join(c.data.dir.dataset, "test_db.db")
 
         self.geometry_table = pd.read_csv(os.path.join(c.data.dir.input, "sensor_geometry.csv"))
 
         self.meta_table = c.data.ice_cube.meta_table
         self.pulse_table = c.data.ice_cube.pulse_table
 
-    def convert_to_sqlite(self, batch_size: int = 200000) -> None:
+        self.is_training = c.settings.is_training
+        self.train_batch = list(range(c.data.ice_cube.train_batch, c.data.ice_cube.train_batch + 1))
+
+        os.makedirs(c.data.dir.dataset, exist_ok=True)
+
+    def convert_to_sqlite(self, batch_size: int = 200000):
         """Converts a selection of the Competition's parquet files to a single sqlite database.
 
         Args:
@@ -36,7 +42,10 @@ class Sqlite:
         """
         metadata_iter = pq.ParquetFile(self.metadata_path).iter_batches(batch_size=batch_size)
 
-        for metadata_batch in metadata_iter:
+        for n, metadata_batch in enumerate(metadata_iter):
+            if self.is_training and n not in self.train_batch:
+                continue
+
             metadata_batch = metadata_batch.to_pandas()
             self.add_to_table(df=metadata_batch, table_name=self.meta_table, is_primary_key=True)
             pulses = self.load_input(meta_batch=metadata_batch)

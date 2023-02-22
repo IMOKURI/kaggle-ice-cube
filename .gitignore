@@ -141,6 +141,7 @@ pretrained
 
 notebook/inference.ipynb
 submission.csv
+valid.csv
 *.zip
 
 catboost_info

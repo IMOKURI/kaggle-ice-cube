@@ -22,8 +22,6 @@ from omegaconf.errors import ConfigAttributeError
 
 log = logging.getLogger(__name__)
 
-_ALWAYS_CATCH = False
-
 
 def basic_logger():
     logging.basicConfig(
@@ -33,17 +31,8 @@ def basic_logger():
     )
 
 
-def set_always_catch(catch: bool):
-    global _ALWAYS_CATCH
-    _ALWAYS_CATCH = catch
-
-
-def in_kaggle() -> bool:
-    return "kaggle_web_client" in sys.modules
-
-
 @contextmanager
-def catch_everything_in_kaggle(name: Optional[str] = None):
+def catch_everything(name: Optional[str] = None, ignore_exception: Optional[bool] = True):
     try:
         yield
     except Exception:
@@ -51,7 +40,7 @@ def catch_everything_in_kaggle(name: Optional[str] = None):
         warnings.warn(msg)
         log.warning(msg)
 
-        if in_kaggle() or _ALWAYS_CATCH:
+        if ignore_exception:
             # ...catch and suppress if this is executed in kaggle
             pass
         else:
