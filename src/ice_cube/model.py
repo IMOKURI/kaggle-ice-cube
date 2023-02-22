@@ -8,9 +8,9 @@ from graphnet.models.detector.icecube import IceCubeKaggle
 from graphnet.models.gnn import DynEdge
 from graphnet.models.graph_builders import KNNGraphBuilder
 from graphnet.models.task.reconstruction import (
-    AzimuthReconstructionWithKappa,
+    AzimuthReconstruction,
     DirectionReconstructionWithKappa,
-    ZenithReconstructionWithKappa,
+    ZenithReconstruction,
 )
 from graphnet.training.callbacks import PiecewiseLinearLR
 from graphnet.training.loss_functions import VonMisesFisher2DLoss, VonMisesFisher3DLoss
@@ -30,21 +30,21 @@ def build_model(c, dataloader: Any) -> StandardModel:
         global_pooling_schemes=["min", "max", "mean"],
     )
 
-    # task = DirectionReconstructionWithKappa(
+    task = DirectionReconstructionWithKappa(
+        hidden_size=gnn.nb_outputs,
+        target_labels=c.model_params.target,
+        loss_function=VonMisesFisher3DLoss(),
+    )
+    # azimuth_task = AzimuthReconstruction(
     #     hidden_size=gnn.nb_outputs,
-    #     target_labels=c.model_params.target,
-    #     loss_function=VonMisesFisher3DLoss(),
+    #     target_labels=["azimuth"],
+    #     loss_function=VonMisesFisher2DLoss(),
     # )
-    azimuth_task = AzimuthReconstructionWithKappa(
-        hidden_size=gnn.nb_outputs,
-        target_labels=["azimuth"],
-        loss_function=VonMisesFisher2DLoss(),
-    )
-    zenith_task = ZenithReconstructionWithKappa(
-        hidden_size=gnn.nb_outputs,
-        target_labels=["zenith"],
-        loss_function=VonMisesFisher2DLoss(),
-    )
+    # zenith_task = ZenithReconstruction(
+    #     hidden_size=gnn.nb_outputs,
+    #     target_labels=["zenith"],
+    #     loss_function=VonMisesFisher2DLoss(),
+    # )
     prediction_columns = [
         c.model_params.target + "_x",
         c.model_params.target + "_y",
@@ -56,8 +56,8 @@ def build_model(c, dataloader: Any) -> StandardModel:
     model = StandardModel(
         detector=detector,
         gnn=gnn,
-        # tasks=[task],
-        tasks=[azimuth_task, zenith_task],
+        tasks=[task],
+        # tasks=[azimuth_task, zenith_task],
         optimizer_class=Adam,
         optimizer_kwargs={
             "lr": c.training_params.lr,

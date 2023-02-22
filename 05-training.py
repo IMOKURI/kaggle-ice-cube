@@ -44,7 +44,7 @@ def main(c):
         train_loader,
         valid_loader,
         callbacks=callbacks,
-        gpus=[0, 1, 2, 3],
+        gpus=[0],
         # distribution_strategy="ddp",
         max_epochs=c.training_params.epoch,
     )

@@ -1,6 +1,7 @@
 import os
 
 from graphnet.data.constants import FEATURES, TRUTH
+from graphnet.training.labels import Direction
 from graphnet.training.utils import make_dataloader, make_train_validation_dataloader
 
 
@@ -13,6 +14,7 @@ def make_train_dataloader(c):
         pulsemaps=c.data.ice_cube.pulse_table,
         features=FEATURES.KAGGLE,
         truth=TRUTH.KAGGLE,
+        labels={"direction": Direction()},
         batch_size=c.training_params.batch_size,
         # num_workers=c.training_params.num_workers,
         index_column=c.settings.index_name,
@@ -33,6 +35,7 @@ def make_test_dataloader(c):
         pulsemaps=c.data.ice_cube.pulse_table,
         features=FEATURES.KAGGLE,
         truth=TRUTH.KAGGLE,
+        labels={"direction": Direction()},
         batch_size=c.training_params.batch_size,
         shuffle=False,
         # num_workers=c.training_params.num_workers,
