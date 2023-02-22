@@ -2,6 +2,7 @@ import logging
 import os
 from typing import Any
 
+import torch.nn as nn
 from graphnet.models import StandardModel
 from graphnet.models.detector.icecube import IceCubeKaggle
 from graphnet.models.gnn import DynEdge
@@ -12,7 +13,7 @@ from graphnet.models.task.reconstruction import (
     ZenithReconstructionWithKappa,
 )
 from graphnet.training.callbacks import PiecewiseLinearLR
-from graphnet.training.loss_functions import VonMisesFisher3DLoss
+from graphnet.training.loss_functions import VonMisesFisher2DLoss, VonMisesFisher3DLoss
 from torch.optim.adam import Adam
 
 log = logging.getLogger(__name__)
@@ -29,10 +30,20 @@ def build_model(c, dataloader: Any) -> StandardModel:
         global_pooling_schemes=["min", "max", "mean"],
     )
 
-    task = DirectionReconstructionWithKappa(
+    # task = DirectionReconstructionWithKappa(
+    #     hidden_size=gnn.nb_outputs,
+    #     target_labels=c.model_params.target,
+    #     loss_function=VonMisesFisher3DLoss(),
+    # )
+    azimuth_task = AzimuthReconstructionWithKappa(
         hidden_size=gnn.nb_outputs,
-        target_labels=c.model_params.target,
-        loss_function=VonMisesFisher3DLoss(),
+        target_labels=["azimuth"],
+        loss_function=VonMisesFisher2DLoss(),
+    )
+    zenith_task = ZenithReconstructionWithKappa(
+        hidden_size=gnn.nb_outputs,
+        target_labels=["zenith"],
+        loss_function=VonMisesFisher2DLoss(),
     )
     prediction_columns = [
         c.model_params.target + "_x",
@@ -45,7 +56,8 @@ def build_model(c, dataloader: Any) -> StandardModel:
     model = StandardModel(
         detector=detector,
         gnn=gnn,
-        tasks=[task],
+        # tasks=[task],
+        tasks=[azimuth_task, zenith_task],
         optimizer_class=Adam,
         optimizer_kwargs={
             "lr": c.training_params.lr,

@@ -7,12 +7,12 @@ GROUP := $(shell date '+%Y%m%d-%H%M')
 HEAD_COMMIT = $(shell git rev-parse HEAD)
 
 train: ## Run training.
-	docker run -d --rm -u $(shell id -u):$(shell id -g) --gpus '"device=6,7"' \
+	docker run -d --rm -u $(shell id -u):$(shell id -g) --gpus all \
 		-v ~/.netrc:/home/jupyter/.netrc \
 		-v $(shell pwd):/app -w /app \
 		--shm-size=256g \
 		ponkots-kaggle-gpu \
-		python train.py  # +settings.run_fold=0
+		python ./05-training.py  # +settings.run_fold=0
 
 debug: ## Run training debug mode.
 	docker run -d --rm -u $(shell id -u):$(shell id -g) --gpus '"device=1,2"' \
@@ -50,6 +50,9 @@ clean-pyc: ## Remove python artifacts.
 
 clean-training: ## Remove training artifacts.
 	@rm -rf ./output ./multirun abort-training.flag
+
+release-gpu: ## Release GPU memory.
+	kill $(shell lsof -t /dev/nvidia*)
 
 help: ## Show this help.
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_-]+:.*?## / {printf "\033[38;2;98;209;150m%-15s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)

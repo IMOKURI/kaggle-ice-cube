@@ -20,77 +20,58 @@ wandb:
   group: ${global_params.method}
 
 settings:
-  print_freq: 100
+  # print_freq: 100
   # gpus: "0,1"
 
   debug: False
-  n_debug_data: 0
+  # n_debug_data: 0
 
-  amp: True
-  multi_gpu: True
+  # amp: True
+  # multi_gpu: True
 
   in_kaggle: False
   is_training: True
 
   index_name: event_id
-  label_name: label # label  # ** cell_type_num
-  n_class: 1
-  scoring: pearson # pearson, accuracy  # ** adversarial
+  # label_name: label
+  # n_class: 1
+  # scoring: pearson
 
 params:
   seed: ${global_params.seed}
 
 global_params:
   seed: 440
-  method: nn # tuning_tabnet, adversarial_tabnet  # ** adversarial
+  # method: nn
 
 cv_params:
-  n_fold: 7
-  n_validation: 1
-  fold: stratified
-  group_name: donor
+  # n_fold: 7
+  # n_validation: 1
+  # fold: stratified
+  # group_name: donor
   # time_name: ""
 
 training_params:
   epoch: 20
   es_patience: 10
   batch_size: 16
-  num_workers: 4
-  gradient_acc_step: 1
-  max_grad_norm: 1000
+  # num_workers: 4
+  # gradient_acc_step: 1
+  # max_grad_norm: 1000
   # feature_set:
   #   - "f000" # f000_open_close
-  criterion: PearsonCCLoss # PearsonCCLoss, RMSELoss
-  optimizer: Adam
-  scheduler: CosineAnnealingWarmRestarts
+  # criterion: PearsonCCLoss # PearsonCCLoss, RMSELoss
+  # optimizer: Adam
+  # scheduler: CosineAnnealingWarmRestarts
   lr: 1e-3
-  min_lr: 1e-5
+  # min_lr: 1e-5
   eps: 1e-3
   weight_decay: 0
   # label_smoothing: 1e-6
 
-  use_cell_type: True
-  tabnet:
-    pre_training: True
-
 model_params:
   target: direction
-
-  dataset: table_base
-  model: one_d_cnn
-  model_name: one_d_cnn
-  model_input: 0
-  tf_initialization: False
+  # model: default
+  # model_name: default
 
 inference_params:
-  cite_ensemble_weight_optimization: False
-  multi_ensemble_weight_optimization: False
-  main_submission_weight: 2
-  pretrained:
-    5-5-msci22-ensembling-citeseq-v2: 1.25 # 0.812
-    all-in-one-citeseq-multiome-with-keras: 1 # 0.812
-    uehara-san-2022-10-28-0749: 1 # 0.811 No.11
-  # pretrained:
-  #   - dir: ""
-  #     model: ""
-  #     name: ""

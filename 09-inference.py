@@ -48,7 +48,7 @@ def main(c):
             valid_df["azimuth"], valid_df["zenith"], submission_df["azimuth"], submission_df["zenith"]
         )
         log.info(f"score: {score}")
-        valid_df.to_csv("valid.csv")
+        # valid_df.to_csv("valid.csv")
 
     log.info("Done.")
 
