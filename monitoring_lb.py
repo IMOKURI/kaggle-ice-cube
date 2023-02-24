@@ -1,8 +1,17 @@
 import datetime
+import logging
 import time
 from datetime import timezone
 
 from kaggle.api.kaggle_api_extended import KaggleApi
+
+logging.basicConfig(
+    # filename=__file__.replace('.py', '.log'),
+    level=logging.getLevelName("INFO"),
+    format="%(asctime)s [%(levelname)s] [%(module)s] %(message)s",
+)
+
+log = logging.getLogger(__name__)
 
 api = KaggleApi()
 api.authenticate()
@@ -24,7 +33,7 @@ while status != "complete":
     now = datetime.datetime.now(timezone.utc).replace(tzinfo=None)
     elapsed_time = int((now - submit_time).seconds / 60) + 1
     if status == "complete":
-        print("\r", f"run-time: {elapsed_time} min, LB: {result.publicScore}")
+        log.info(f"run-time: {elapsed_time} min, LB: {result.publicScore}")
     else:
-        print("\r", f"elapsed time: {elapsed_time} min", end="")
+        log.info(f"elapsed time: {elapsed_time} min")
         time.sleep(60)
