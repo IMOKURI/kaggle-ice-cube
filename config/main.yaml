@@ -55,7 +55,7 @@ training_params:
   epoch: 20
   es_patience: 10
   batch_size: 8
-  # num_workers: 4
+  num_workers: 4
   # gradient_acc_step: 1
   # max_grad_norm: 1000
   # feature_set:
@@ -75,3 +75,4 @@ model_params:
   # model_name: default
 
 inference_params:
+  tta: True
