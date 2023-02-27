@@ -1,7 +1,7 @@
 import logging
 import os
 
-import polars as pl
+import pandas as pd
 
 from .make_fold import make_fold
 from .preprocess import preprocess, preprocess_train_test
@@ -23,10 +23,10 @@ class LoadData:
                 log.info(f"Load original file. path: {original_file_path}")
 
                 if extension == ".csv":
-                    df = pl.read_csv(original_file_path)
+                    df = pd.read_csv(original_file_path)
 
                 elif extension == ".parquet":
-                    df = pl.read_parquet(original_file_path)
+                    df = pd.read_parquet(original_file_path)
 
                 else:
                     raise Exception(f"Invalid extension to load file. filename: {original_file_path}")
