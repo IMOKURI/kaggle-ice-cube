@@ -39,7 +39,7 @@ def make_test_dataloader(c):
 
     dataloader = make_dataloader(
         db=database_path,
-        selection=None,  # Entire database
+        selection=None,  # Entire database: None
         pulsemaps=c.data.ice_cube.pulse_table,
         features=FEATURES.KAGGLE,
         truth=TRUTH.KAGGLE,
@@ -64,7 +64,7 @@ def make_test_dataloader_plus_minus(c):
         database_path = os.path.join(c.data.dir.dataset, "test_db.db")
 
     db = database_path
-    selection = None  # Entire database
+    selection = None # Entire database
     pulsemaps = c.data.ice_cube.pulse_table
     features = FEATURES.KAGGLE
     truth = TRUTH.KAGGLE

@@ -61,7 +61,7 @@ def main(c):
         score = angular_dist_score(
             valid_df["azimuth"], valid_df["zenith"], submission_df["azimuth"], submission_df["zenith"]
         )
-        log.info(f"score: {score}")
+        log.info(f"Base score: {score}")
         # valid_df.to_csv("valid.csv")
 
         if c.inference_params.tta:
@@ -73,6 +73,12 @@ def main(c):
     if c.inference_params.tta:
         results = (results + results_tta) / 2
         submission_df = to_submission_df(results)
+
+        if c.settings.is_training:
+            score = angular_dist_score(
+                valid_df["azimuth"], valid_df["zenith"], submission_df["azimuth"], submission_df["zenith"]
+            )
+            log.info(f"Final score: {score}")
 
     submission_df.to_csv("submission.csv")
     log.info("Done.")
