@@ -9,12 +9,16 @@ import pandas as pd
 import pyarrow.parquet as pq
 import sqlalchemy
 from graphnet.data.sqlite.sqlite_utilities import create_table
+from scipy.cluster.hierarchy import fcluster, linkage
+from tqdm import tqdm
 
 log = logging.getLogger(__name__)
 
 
 class Sqlite:
     def __init__(self, c):
+        self.enable_h_cluster = c.preprocess_params.enable_h_cluster
+
         if c.settings.is_training:
             self.input_batch_dir = c.data.dir.input_train
             self.metadata_path = os.path.join(c.data.dir.input, "train_meta.parquet")
@@ -35,42 +39,47 @@ class Sqlite:
         os.makedirs(c.data.dir.dataset, exist_ok=True)
 
     def convert_to_sqlite(self, batch_size: int = 200000):
-        """Converts a selection of the Competition's parquet files to a single sqlite database.
-
-        Args:
-            batch_size (int): the number of rows extracted from meta data file at a time. Keep low for memory efficiency.
-        """
         metadata_iter = pq.ParquetFile(self.metadata_path).iter_batches(batch_size=batch_size)
 
-        for n, metadata_batch in enumerate(metadata_iter):
+        for n, meta_df in enumerate(metadata_iter):
             if self.is_training and n not in self.train_batch:
                 continue
 
-            metadata_batch = metadata_batch.to_pandas()
-            self.add_to_table(df=metadata_batch, table_name=self.meta_table, is_primary_key=True)
-            pulses = self.load_input(meta_batch=metadata_batch)
-            del metadata_batch  # memory
-            self.add_to_table(df=pulses, table_name=self.pulse_table, is_primary_key=False)
-            del pulses  # memory
-        del metadata_iter  # memory
+            meta_df = meta_df.to_pandas()
+            self.create_table(columns=meta_df.columns, table_name=self.meta_table, is_primary_key=True)
+            self.add_records(df=meta_df, table_name=self.meta_table)
+
+            batch_id = pd.unique(meta_df["batch_id"])
+            assert len(batch_id) == 1, "contains multiple batch_ids. Did you set the batch_size correctly?"
+            log.info(f"{self.database_path} . {batch_id} ...")
+
+            batch_df = pd.read_parquet(path=f"{self.input_batch_dir}/batch_{batch_id[0]}.parquet").reset_index()
+            sensor_positions = self.geometry_table.loc[batch_df["sensor_id"], ["x", "y", "z"]]
+            sensor_positions.index = batch_df.index
+
+            for column in sensor_positions.columns:
+                if column not in batch_df.columns:
+                    batch_df[column] = sensor_positions[column]
+
+            batch_df["auxiliary"] = batch_df["auxiliary"].replace({True: 1, False: 0})
+
+            self.create_table(columns=batch_df.columns, table_name=self.pulse_table, is_primary_key=False)
+            self.load_events(meta_df, batch_df)
+
+            del meta_df
+            del batch_df
+        del metadata_iter
         log.info(f"Conversion Complete!. Database available at {self.database_path}")
 
-    def add_to_table(
+    def create_table(
         self,
-        df: pd.DataFrame,
+        columns: List,
         table_name: str,
         is_primary_key: bool,
     ) -> None:
-        """Writes meta data to sqlite table.
-
-        Args:
-            df (pd.DataFrame): the dataframe that is being written to table.
-            table_name (str, optional): The name of the meta table. Defaults to 'meta_table'.
-            is_primary_key(bool): Must be True if each row of df corresponds to a unique event_id. Defaults to False.
-        """
         try:
             create_table(
-                columns=df.columns,
+                columns=columns,
                 database_path=self.database_path,
                 table_name=table_name,
                 integer_primary_key=is_primary_key,
@@ -81,27 +90,29 @@ class Sqlite:
                 pass
             else:
                 raise e
+
+    def add_records(
+        self,
+        df: pd.DataFrame,
+        table_name: str,
+    ) -> None:
         engine = sqlalchemy.create_engine("sqlite:///" + self.database_path)
         df.to_sql(table_name, con=engine, index=False, if_exists="append", chunksize=200000)
         engine.dispose()
         return
 
-    def load_input(self, meta_batch: pd.DataFrame) -> pd.DataFrame:
-        """
-        Will load the corresponding detector readings associated with the meta data batch.
-        """
-        batch_id = pd.unique(meta_batch["batch_id"])
-        log.info(f"{self.database_path} . {batch_id} ...")
+    def load_events(self, meta_df: pd.DataFrame, batch_df: pd.DataFrame):
+        for event_id in tqdm(batch_df["event_id"].unique()):
+            first_index = meta_df[meta_df["event_id"] == event_id]["first_pulse_index"].to_numpy()[0]
+            last_index = meta_df[meta_df["event_id"] == event_id]["last_pulse_index"].to_numpy()[0]
+            event_df = batch_df.iloc[first_index:last_index, :].copy()
 
-        assert len(batch_id) == 1, "contains multiple batch_ids. Did you set the batch_size correctly?"
+            if self.enable_h_cluster:
+                h_cluster = linkage(event_df)
+                event_df.loc[:, "h_label"] = fcluster(h_cluster, 1)
 
-        detector_readings = pd.read_parquet(path=f"{self.input_batch_dir}/batch_{batch_id[0]}.parquet")
-        sensor_positions = self.geometry_table.loc[detector_readings["sensor_id"], ["x", "y", "z"]]
-        sensor_positions.index = detector_readings.index
+                event_df = event_df[event_df.duplicated(subset=["h_label"], keep=False)]
+                event_df.drop(["h_label"], axis=1, inplace=True)
 
-        for column in sensor_positions.columns:
-            if column not in detector_readings.columns:
-                detector_readings[column] = sensor_positions[column]
-
-        detector_readings["auxiliary"] = detector_readings["auxiliary"].replace({True: 1, False: 0})
-        return detector_readings.reset_index()
+            assert len(event_df) > 0
+            self.add_records(event_df, self.pulse_table)

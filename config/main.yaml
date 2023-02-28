@@ -44,6 +44,9 @@ global_params:
   seed: 440
   # method: nn
 
+preprocess_params:
+  enable_h_cluster: True
+
 cv_params:
   # n_fold: 7
   # n_validation: 1

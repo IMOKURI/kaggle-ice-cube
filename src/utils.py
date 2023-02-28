@@ -292,7 +292,7 @@ def setup_wandb(c):
     if c.wandb.enabled:
         os.makedirs(os.path.abspath(c.wandb.dir), exist_ok=True)
         c_dict = OmegaConf.to_container(c.params, resolve=True)
-        c_dict["commit"] = get_commit_hash(c.settings.dirs.working)
+        c_dict["commit"] = get_commit_hash(c.data.dir.working)
         run = wandb.init(
             entity=c.wandb.entity,
             project=c.wandb.project,
