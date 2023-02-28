@@ -18,6 +18,8 @@ log = logging.getLogger(__name__)
 class Sqlite:
     def __init__(self, c):
         self.enable_h_cluster = c.preprocess_params.enable_h_cluster
+        self.only_auxiliary_false = c.preprocess_params.only_auxiliary_false
+        self.charge_percentile = c.preprocess_params.charge_percentile
 
         if c.settings.is_training:
             self.input_batch_dir = c.data.dir.input_train
@@ -107,8 +109,17 @@ class Sqlite:
             last_index = meta_df[meta_df["event_id"] == event_id]["last_pulse_index"].to_numpy()[0]
             event_df = batch_df.iloc[first_index:last_index, :].copy()
 
+            if self.charge_percentile:
+                event_df = event_df[
+                    (event_df["charge"] < event_df["charge"].quantile(0.95))
+                    & (event_df["charge"] > event_df["charge"].quantile(0.05))
+                ]
+
+            if self.only_auxiliary_false:
+                event_df = event_df[event_df["auxiliary"] == 0]
+
             if self.enable_h_cluster:
-                h_cluster = linkage(event_df)
+                h_cluster = linkage(event_df[["time", "charge", "x", "y", "z"]])
                 event_df.loc[:, "h_label"] = fcluster(h_cluster, 1)
 
                 event_df = event_df[event_df.duplicated(subset=["h_label"], keep=False)]

@@ -46,6 +46,8 @@ global_params:
 
 preprocess_params:
   enable_h_cluster: True
+  only_auxiliary_false: False
+  charge_percentile: False
 
 cv_params:
   # n_fold: 7
