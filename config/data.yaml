@@ -17,4 +17,4 @@ data:
   ice_cube:
     pulse_table: pulse_table
     meta_table: meta_table
-    train_batch: 0 # 0-650 step 10
+    train_batch: 440 # 0-650 step 10

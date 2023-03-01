@@ -45,7 +45,7 @@ global_params:
   # method: nn
 
 preprocess_params:
-  enable_h_cluster: True
+  enable_h_cluster: False
   only_auxiliary_false: False
   charge_percentile: False
 
@@ -80,4 +80,4 @@ model_params:
   # model_name: default
 
 inference_params:
-  tta: True
+  tta: False

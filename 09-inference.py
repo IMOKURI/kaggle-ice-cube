@@ -1,6 +1,7 @@
 import logging
 
 import hydra
+import numpy as np
 import pandas as pd
 
 import src.utils as utils
@@ -79,6 +80,30 @@ def main(c):
                 valid_df["azimuth"], valid_df["zenith"], submission_df["azimuth"], submission_df["zenith"]
             )
             log.info(f"Final score: {score}")
+
+    if c.settings.is_training:
+        results.loc[:, "sigma"] = 1 / np.sqrt(results["direction_kappa"])
+
+        submission_low_sigma = to_submission_df(results[results["sigma"] <= 0.5])
+        submission_high_sigma = to_submission_df(results[results["sigma"] > 0.5])
+
+        results.set_index("event_id", inplace=True)
+        valid_low_sigma = valid_df[results["sigma"] <= 0.5]
+        valid_high_sigma = valid_df[results["sigma"] > 0.5]
+
+        score_low_sigma = angular_dist_score(
+            valid_low_sigma["azimuth"],
+            valid_low_sigma["zenith"],
+            submission_low_sigma["azimuth"],
+            submission_low_sigma["zenith"],
+        )
+        score_high_sigma = angular_dist_score(
+            valid_high_sigma["azimuth"],
+            valid_high_sigma["zenith"],
+            submission_high_sigma["azimuth"],
+            submission_high_sigma["zenith"],
+        )
+        log.info(f"Low sigma score: {score_low_sigma}, High sigma score: {score_high_sigma}")
 
     submission_df.to_csv("submission.csv")
     log.info("Done.")
