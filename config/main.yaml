@@ -43,6 +43,7 @@ params:
 global_params:
   seed: 440
   # method: nn
+  stage_high_sigma: True
 
 preprocess_params:
   enable_h_cluster: False

@@ -10,12 +10,12 @@ from torch.utils.data import DataLoader
 from torch_geometric.data import Batch, Data
 
 
-def make_train_dataloader(c):
+def make_train_dataloader(c, selection=None):
     database_path = os.path.join(c.data.dir.dataset, f"train_{c.data.ice_cube.train_batch}_db.db")
 
     train_loader, valid_loader = make_train_validation_dataloader(
         db=database_path,
-        selection=None,  # Entire database
+        selection=selection,  # Entire database
         pulsemaps=c.data.ice_cube.pulse_table,
         features=FEATURES.KAGGLE,
         truth=TRUTH.KAGGLE,
@@ -31,7 +31,7 @@ def make_train_dataloader(c):
     return train_loader, valid_loader
 
 
-def make_test_dataloader(c):
+def make_test_dataloader(c, selection=None):
     if c.settings.is_training:
         database_path = os.path.join(c.data.dir.dataset, f"train_{c.data.ice_cube.train_batch}_db.db")
     else:
@@ -39,7 +39,7 @@ def make_test_dataloader(c):
 
     dataloader = make_dataloader(
         db=database_path,
-        selection=None,  # Entire database: None
+        selection=selection,  # Entire database: None
         pulsemaps=c.data.ice_cube.pulse_table,
         features=FEATURES.KAGGLE,
         truth=TRUTH.KAGGLE,
@@ -54,7 +54,7 @@ def make_test_dataloader(c):
     return dataloader
 
 
-def make_test_dataloader_plus_minus(c):
+def make_test_dataloader_plus_minus(c, selection=None):
     """
     https://graphnet-team.github.io/graphnet/api/graphnet.training.utils.html#graphnet.training.utils.make_dataloader
     """
@@ -64,7 +64,7 @@ def make_test_dataloader_plus_minus(c):
         database_path = os.path.join(c.data.dir.dataset, "test_db.db")
 
     db = database_path
-    selection = None # Entire database
+    # selection = selection # Entire database
     pulsemaps = c.data.ice_cube.pulse_table
     features = FEATURES.KAGGLE
     truth = TRUTH.KAGGLE

@@ -119,7 +119,7 @@ class Sqlite:
                 event_df = event_df[event_df["auxiliary"] == 0]
 
             if self.enable_h_cluster:
-                h_cluster = linkage(event_df[["time", "charge", "x", "y", "z"]])
+                h_cluster = linkage(event_df[["time", "x", "y", "z"]])
                 event_df.loc[:, "h_label"] = fcluster(h_cluster, 1)
 
                 event_df = event_df[event_df.duplicated(subset=["h_label"], keep=False)]
