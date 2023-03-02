@@ -1,5 +1,4 @@
-import os
-from typing import List
+from typing import Callable, List
 
 import torch
 from graphnet.data.constants import FEATURES, TRUTH
@@ -10,9 +9,7 @@ from torch.utils.data import DataLoader
 from torch_geometric.data import Batch, Data
 
 
-def make_train_dataloader(c, selection=None):
-    database_path = os.path.join(c.data.dir.dataset, f"train_{c.data.ice_cube.train_batch}_db.db")
-
+def make_train_dataloader(c, database_path, selection=None):
     train_loader, valid_loader = make_train_validation_dataloader(
         db=database_path,
         selection=selection,  # Entire database
@@ -31,12 +28,7 @@ def make_train_dataloader(c, selection=None):
     return train_loader, valid_loader
 
 
-def make_test_dataloader(c, selection=None):
-    if c.settings.is_training:
-        database_path = os.path.join(c.data.dir.dataset, f"train_{c.data.ice_cube.train_batch}_db.db")
-    else:
-        database_path = os.path.join(c.data.dir.dataset, "test_db.db")
-
+def make_test_dataloader(c, database_path, selection=None):
     dataloader = make_dataloader(
         db=database_path,
         selection=selection,  # Entire database: None
@@ -54,56 +46,34 @@ def make_test_dataloader(c, selection=None):
     return dataloader
 
 
-def make_test_dataloader_plus_minus(c, selection=None):
-    """
-    https://graphnet-team.github.io/graphnet/api/graphnet.training.utils.html#graphnet.training.utils.make_dataloader
-    """
-    if c.settings.is_training:
-        database_path = os.path.join(c.data.dir.dataset, f"train_{c.data.ice_cube.train_batch}_db.db")
-    else:
-        database_path = os.path.join(c.data.dir.dataset, "test_db.db")
-
-    db = database_path
-    # selection = selection # Entire database
-    pulsemaps = c.data.ice_cube.pulse_table
-    features = FEATURES.KAGGLE
-    truth = TRUTH.KAGGLE
-    labels = None  # labels={"direction": Direction()}
-    batch_size = c.training_params.batch_size
-    shuffle = False
-    num_workers = c.training_params.num_workers
-    index_column = c.settings.index_name
-    truth_table = c.data.ice_cube.meta_table
-
-    if isinstance(pulsemaps, str):
-        pulsemaps = [pulsemaps]
-
+def make_test_dataloader_custom(c, database_path, collate_fn: Callable, selection=None):
     dataset = SQLiteDataset(
-        path=db,
-        pulsemaps=pulsemaps,
-        features=features,
-        truth=truth,
+        path=database_path,
+        pulsemaps=[c.data.ice_cube.pulse_table],
+        features=FEATURES.KAGGLE,
+        truth=TRUTH.KAGGLE,
         selection=selection,
         node_truth=None,
-        truth_table=truth_table,
+        truth_table=c.data.ice_cube.meta_table,
         node_truth_table=None,
         string_selection=None,
         loss_weight_table=None,
         loss_weight_column=None,
-        index_column=index_column,
+        index_column=c.settings.index_name,
     )
 
     # adds custom labels to dataset
+    labels = None  # labels={"direction": Direction()}
     if isinstance(labels, dict):
         for label in labels.keys():
             dataset.add_label(key=label, fn=labels[label])
 
     dataloader = DataLoader(
         dataset,
-        batch_size=batch_size,
-        shuffle=shuffle,
-        num_workers=num_workers,
-        collate_fn=collate_fn_plus_minus,
+        batch_size=c.training_params.batch_size,
+        shuffle=False,
+        num_workers=c.training_params.num_workers,
+        collate_fn=collate_fn,
         persistent_workers=True,
         prefetch_factor=2,
     )
@@ -111,11 +81,12 @@ def make_test_dataloader_plus_minus(c, selection=None):
     return dataloader
 
 
-def collate_fn_plus_minus(graphs: List[Data]) -> Batch:
-    """Remove graphs with less than two DOM hits.
+def collate_fn(graphs: List[Data]) -> Batch:
+    graphs = [g for g in graphs if g.n_pulses > 1]
+    return Batch.from_data_list(graphs)
 
-    Should not occur in "production.
-    """
+
+def collate_fn_plus_minus(graphs: List[Data]) -> Batch:
     batch = []
     for data in graphs:
         data.x = torch.mul(data.x, torch.FloatTensor([-1, -1, -1, 1, 1, 1]))

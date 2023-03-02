@@ -1,4 +1,5 @@
 import logging
+import os
 
 import hydra
 import numpy as np
@@ -21,7 +22,12 @@ def main(c):
     utils.basic_environment_info()
     utils.fix_seed(utils.choice_seed(c))
 
-    dataloader = make_test_dataloader(c)
+    if c.settings.is_training:
+        database_path = os.path.join(c.data.dir.dataset, f"train_{c.data.ice_cube.train_batch}_db.db")
+    else:
+        database_path = os.path.join(c.data.dir.dataset, "test_db.db")
+
+    dataloader = make_test_dataloader(c, database_path)
     model = load_pretrained_model(c, dataloader)
 
     results = model.predict_as_dataframe(
@@ -36,6 +42,12 @@ def main(c):
 
     results.loc[:, "sigma"] = 1 / np.sqrt(results["direction_kappa"])
     results.to_csv("results.csv")
+
+    submission_low_sigma = to_submission_df(results[results["sigma"] <= 0.5].copy())
+    submission_high_sigma = to_submission_df(results[results["sigma"] > 0.5].copy())
+
+    submission_low_sigma.to_csv("submission_low_sigma.csv")
+    submission_high_sigma.to_csv("submission_high_sigma.csv")
 
     if c.settings.is_training:
         valid_data = dataloader.dataset.query_table("meta_table", ["event_id", "azimuth", "zenith"])

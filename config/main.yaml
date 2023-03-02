@@ -43,12 +43,9 @@ params:
 global_params:
   seed: 440
   # method: nn
-  stage_high_sigma: True
 
 preprocess_params:
-  enable_h_cluster: False
-  only_auxiliary_false: False
-  charge_percentile: False
+  enable_h_cluster: True
 
 cv_params:
   # n_fold: 7
@@ -60,7 +57,7 @@ cv_params:
 training_params:
   epoch: 20
   es_patience: 10
-  batch_size: 8
+  batch_size: 16
   num_workers: 4
   # gradient_acc_step: 1
   # max_grad_norm: 1000
