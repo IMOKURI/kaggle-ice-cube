@@ -30,7 +30,7 @@ class Sqlite:
             self.database_path = os.path.join(c.data.dir.dataset, "test_db.db")
 
         if stage2:
-            self.database_path = os.path.join(c.data.dir.dataset, f"train_{c.data.ice_cube.train_batch}_db2.db")
+            self.database_path = self.database_path.replace("_db.", "_db2.")
             self.enable_h_cluster = c.preprocess_params.enable_h_cluster
             high_sigma = pd.read_csv("submission_high_sigma.csv")
             self.high_sigma_id = high_sigma["event_id"].astype(int)

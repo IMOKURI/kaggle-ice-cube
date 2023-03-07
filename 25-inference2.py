@@ -26,6 +26,8 @@ def main(c):
         database_path = os.path.join(c.data.dir.dataset, f"train_{c.data.ice_cube.train_batch}_db.db")
     else:
         database_path = os.path.join(c.data.dir.dataset, "test_db.db")
+
+    database_path = database_path.replace("_db.", "_db2.")
     log.info(f"Database path: {database_path}")
 
     dataloader = make_test_dataloader(c, database_path)
@@ -39,16 +41,16 @@ def main(c):
     )
 
     submission_df = to_submission_df(results)
-    submission_df.to_csv("submission.csv")
+    submission_df.to_csv("submission2.csv")
 
     results.loc[:, "sigma"] = 1 / np.sqrt(results["direction_kappa"])
-    results.to_csv("results.csv")
+    results.to_csv("results2.csv")
 
     submission_low_sigma = to_submission_df(results[results["sigma"] <= 0.5].copy())
     submission_high_sigma = to_submission_df(results[results["sigma"] > 0.5].copy())
 
-    submission_low_sigma.to_csv("submission_low_sigma.csv")
-    submission_high_sigma.to_csv("submission_high_sigma.csv")
+    submission_low_sigma.to_csv("submission_low_sigma2.csv")
+    submission_high_sigma.to_csv("submission_high_sigma2.csv")
 
     if c.settings.is_training:
         valid_data = dataloader.dataset.query_table("meta_table", ["event_id", "azimuth", "zenith"])
@@ -57,7 +59,7 @@ def main(c):
             .set_index("event_id")
             .loc[submission_df.index, :]
         )
-        valid_df.to_csv("valid.csv")
+        valid_df.to_csv("valid2.csv")
 
     log.info("Done.")
 
