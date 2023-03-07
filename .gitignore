@@ -134,7 +134,6 @@ cache
 dataset
 feature
 input
-multirun
 output
 preprocess
 postprocess
@@ -146,7 +145,5 @@ submission*.csv
 valid*.csv
 results*.csv
 *.zip
-
-catboost_info
 
 nohup.out

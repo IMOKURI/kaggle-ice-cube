@@ -70,7 +70,6 @@ def build_script(modules: List[str]):
         file_data = f.read()
 
     file_data = file_data.replace('"##### INSERT SOURCE CODE HERE FOR SUBMISSION #####\\n",', template)
-    # file_data = file_data.replace("develop-rapids", "python3")  # kernel name
 
     with open("./notebook/inference.ipynb", "w") as f:
         f.write(file_data)
