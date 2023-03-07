@@ -8,7 +8,7 @@ HEAD_COMMIT = $(shell git rev-parse HEAD)
 
 up: ## Start jupyter notebook
 	docker run -d --rm --name notebook -u $(shell id -u):$(shell id -g) --gpus all \
-		-v $(shell pwd):/home/jovyan -w /home/jovyan \
+		-v $(shell pwd):/home/jovyan/working -w /home/jovyan/working \
 		-v /data/home/shared:/home/jovyan/input \
 		-e http_proxy=http://web-proxy.jp.hpecorp.net:8080/ \
 		-e https_proxy=http://web-proxy.jp.hpecorp.net:8080/ \

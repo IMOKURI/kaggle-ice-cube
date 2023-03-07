@@ -4,7 +4,7 @@ defaults:
 
 hydra:
   run:
-    dir: ../output/${now:%Y-%m-%d_%H-%M-%S}
+    dir: output/${now:%Y-%m-%d_%H-%M-%S}
   job:
     chdir: False
   job_logging:
@@ -16,7 +16,7 @@ wandb:
   enabled: True
   entity: imokuri
   project: ice-cube
-  dir: ../cache
+  dir: cache
   group: ${global_params.method}
 
 settings:
