@@ -2,15 +2,14 @@ import logging
 import os
 from typing import Any
 
-import torch.nn as nn
 from graphnet.models import StandardModel
 from graphnet.models.detector.icecube import IceCubeKaggle
 from graphnet.models.gnn import DynEdge
 from graphnet.models.graph_builders import KNNGraphBuilder
 from graphnet.models.task.reconstruction import (
-    AzimuthReconstruction,
+    AzimuthReconstructionWithKappa,
     DirectionReconstructionWithKappa,
-    ZenithReconstruction,
+    ZenithReconstructionWithKappa,
 )
 from graphnet.training.callbacks import PiecewiseLinearLR
 from graphnet.training.loss_functions import VonMisesFisher2DLoss, VonMisesFisher3DLoss
@@ -35,12 +34,12 @@ def build_model(c, dataloader: Any) -> StandardModel:
         target_labels=c.model_params.target,
         loss_function=VonMisesFisher3DLoss(),
     )
-    # azimuth_task = AzimuthReconstruction(
+    # azimuth_task = AzimuthReconstructionWithKappa(
     #     hidden_size=gnn.nb_outputs,
     #     target_labels=["azimuth"],
     #     loss_function=VonMisesFisher2DLoss(),
     # )
-    # zenith_task = ZenithReconstruction(
+    # zenith_task = ZenithReconstructionWithKappa(
     #     hidden_size=gnn.nb_outputs,
     #     target_labels=["zenith"],
     #     loss_function=VonMisesFisher2DLoss(),
@@ -62,7 +61,7 @@ def build_model(c, dataloader: Any) -> StandardModel:
         optimizer_kwargs={
             "lr": c.training_params.lr,
             "eps": c.training_params.eps,
-            "weight_decay": c.training_params.weight_decay,
+            # "weight_decay": c.training_params.weight_decay,
         },
         scheduler_class=PiecewiseLinearLR,
         scheduler_kwargs={
@@ -86,7 +85,7 @@ def build_model(c, dataloader: Any) -> StandardModel:
 def load_pretrained_model(
     c,
     dataloader,
-    state_dict_path: str = "dynedge_pretrained_batch_1_to_50/state_dict.pth",
+    state_dict_path,
 ) -> StandardModel:
     model = build_model(c, dataloader=dataloader)
     # model._inference_trainer = Trainer(config['fit'])

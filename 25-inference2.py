@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 def main(c):
     if c.settings.in_kaggle:
         c.settings.is_training = False
-        c.data.dir.pretrained = "/kaggle/input/dynedge-pretrained"
+        c.data.dir.pretrained = "/kaggle/input"
 
     utils.basic_environment_info()
     utils.fix_seed(utils.choice_seed(c))
@@ -31,7 +31,7 @@ def main(c):
     log.info(f"Database path: {database_path}")
 
     dataloader = make_test_dataloader(c, database_path)
-    model = load_pretrained_model(c, dataloader)
+    model = load_pretrained_model(c, dataloader, state_dict_path=c.inference_params.model_path)
 
     results = model.predict_as_dataframe(
         gpus=[0],
@@ -46,13 +46,13 @@ def main(c):
     results.loc[:, "sigma"] = 1 / np.sqrt(results["direction_kappa"])
     results.to_csv("results2.csv")
 
-    submission_low_sigma = to_submission_df(results[results["sigma"] <= 0.5].copy())
-    submission_high_sigma = to_submission_df(results[results["sigma"] > 0.5].copy())
-
-    submission_low_sigma.to_csv("submission_low_sigma2.csv")
-    submission_high_sigma.to_csv("submission_high_sigma2.csv")
-
     if c.settings.is_training:
+        submission_low_sigma = to_submission_df(results[results["sigma"] <= 0.5].copy())
+        submission_high_sigma = to_submission_df(results[results["sigma"] > 0.5].copy())
+
+        submission_low_sigma.to_csv("submission_low_sigma2.csv")
+        submission_high_sigma.to_csv("submission_high_sigma2.csv")
+
         valid_data = dataloader.dataset.query_table("meta_table", ["event_id", "azimuth", "zenith"])
         valid_df = (
             pd.DataFrame(valid_data, columns=["event_id", "azimuth", "zenith"])

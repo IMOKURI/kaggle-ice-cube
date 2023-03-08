@@ -7,7 +7,7 @@ GROUP := $(shell date '+%Y%m%d-%H%M')
 HEAD_COMMIT = $(shell git rev-parse HEAD)
 
 up: ## Start jupyter notebook
-	docker run -d --rm --name notebook -u $(shell id -u):$(shell id -g) --gpus all \
+	docker run -d --name notebook -u $(shell id -u):$(shell id -g) --gpus all \
 		-v $(shell pwd):/home/jovyan/working -w /home/jovyan/working \
 		-v /data/home/shared:/home/jovyan/input \
 		-e http_proxy=http://web-proxy.jp.hpecorp.net:8080/ \
@@ -22,6 +22,15 @@ up: ## Start jupyter notebook
 
 down: ## Stop jupyter notebook
 	docker stop notebook
+	docker rm notebook
+
+train: ## Run training
+	rm -rf ./checkpoints
+	LD_LIBRARY_PATH="/home/sugiyama/miniconda3/envs/graphnet/lib" python ./05-training.py
+
+train2: ## Run training stage 2
+	rm -rf ./checkpoints
+	LD_LIBRARY_PATH="/home/sugiyama/miniconda3/envs/graphnet/lib" python ./22-training2.py
 
 push: clean ## Publish notebook.
 	@rm -f ./notebook/inference.ipynb

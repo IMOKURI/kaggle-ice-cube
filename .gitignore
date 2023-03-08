@@ -140,6 +140,9 @@ preprocess
 postprocess
 pretrained
 *.db
+model.pth
+state_dict.pth
+checkpoints
 
 notebook/inference.ipynb
 submission*.csv

@@ -42,7 +42,9 @@ class Sqlite:
         self.pulse_table = c.data.ice_cube.pulse_table
 
         self.is_training = c.settings.is_training
-        self.train_batch = list(range(c.data.ice_cube.train_batch, c.data.ice_cube.train_batch + 1))
+        self.train_batch = list(
+            range(c.data.ice_cube.train_batch, c.data.ice_cube.train_batch + c.data.ice_cube.train_batch_size)
+        )
 
         os.makedirs(c.data.dir.dataset, exist_ok=True)
 
@@ -57,6 +59,7 @@ class Sqlite:
             if self.stage2:
                 meta_df = meta_df[meta_df["event_id"].isin(self.high_sigma_id)]
 
+            # log.info(f"pulse table columns: {meta_df.columns}")
             self.create_table(columns=meta_df.columns, table_name=self.meta_table, is_primary_key=True)
             self.add_records(df=meta_df, table_name=self.meta_table)
 
@@ -77,6 +80,7 @@ class Sqlite:
 
             batch_df["auxiliary"] = batch_df["auxiliary"].replace({True: 1, False: 0})
 
+            # log.info(f"pulse table columns: {batch_df.columns}")
             self.create_table(columns=batch_df.columns, table_name=self.pulse_table, is_primary_key=False)
             self.load_events(meta_df, batch_df)
 
@@ -133,10 +137,10 @@ class Sqlite:
                     event_df.loc[:, "h_label"] = fcluster(h_cluster, 1)
 
                     # 単独のメンバーを除外
-                    event_df = event_df[event_df.duplicated(subset=["h_label"], keep=False)]
+                    # event_df = event_df[event_df.duplicated(subset=["h_label"], keep=False)]
 
                     # メンバー数が一番多いグループだけ残す
-                    #event_df = event_df[event_df["h_label"] == event_df["h_label"].value_counts().idxmax()]
+                    # event_df = event_df[event_df["h_label"] == event_df["h_label"].value_counts().idxmax()]
 
                     event_df.drop(["h_label"], axis=1, inplace=True)
                 except Exception as e:

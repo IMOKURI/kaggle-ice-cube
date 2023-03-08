@@ -45,7 +45,7 @@ global_params:
   # method: nn
 
 preprocess_params:
-  enable_h_cluster: True
+  enable_h_cluster: False
 
 cv_params:
   # n_fold: 7
@@ -55,9 +55,9 @@ cv_params:
   # time_name: ""
 
 training_params:
-  epoch: 20
-  es_patience: 10
-  batch_size: 16
+  epoch: 50
+  es_patience: 5
+  batch_size: 32
   num_workers: 4
   # gradient_acc_step: 1
   # max_grad_norm: 1000
@@ -79,3 +79,4 @@ model_params:
 
 inference_params:
   tta: False
+  model_path: "dynedge-pretrained/dynedge_pretrained_batch_1_to_50/state_dict.pth"

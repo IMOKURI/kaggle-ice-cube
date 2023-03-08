@@ -9,6 +9,7 @@ from pytorch_lightning.callbacks import EarlyStopping
 import src.utils as utils
 from src.ice_cube.data_loader import make_train_dataloader
 from src.ice_cube.model import build_model
+import pandas as pd
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +26,11 @@ def main(c):
     run_dir = HydraConfig.get().run.dir
     log.info(f"Run dir: {run_dir}")
 
-    database_path = os.path.join(c.data.dir.dataset, f"train_{c.data.ice_cube.train_batch}_db.db")
+    # database_path = os.path.join(c.data.dir.dataset, f"train_{c.data.ice_cube.train_batch}_db.db")
+    # submission_high_sigma = pd.read_csv("submission_high_sigma.csv")
+    # train_loader, valid_loader = make_train_dataloader(c, database_path, submission_high_sigma["event_id"].ravel().tolist())
+
+    database_path = os.path.join(c.data.dir.dataset, f"train_{c.data.ice_cube.train_batch}_db2.db")
     train_loader, valid_loader = make_train_dataloader(c, database_path)
 
     model = build_model(c, train_loader)

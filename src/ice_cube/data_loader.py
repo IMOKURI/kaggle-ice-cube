@@ -22,7 +22,7 @@ def make_train_dataloader(c, database_path, selection=None):
         index_column=c.settings.index_name,
         truth_table=c.data.ice_cube.meta_table,
         seed=c.global_params.seed,
-        test_size=0.25,
+        test_size=0.2,
     )
 
     return train_loader, valid_loader
