@@ -10,7 +10,7 @@ import pyarrow.parquet as pq
 import sqlalchemy
 from graphnet.data.sqlite.sqlite_utilities import create_table
 from scipy.cluster.hierarchy import fcluster, linkage
-from scipy.spatial.distance import euclidean
+from scipy.spatial.distance import euclidean, pdist
 from tqdm import tqdm
 
 log = logging.getLogger(__name__)
@@ -126,7 +126,10 @@ class Sqlite:
 
             if self.enable_h_cluster:
                 try:
-                    h_cluster = linkage(event_df[["time", "x", "y", "z"]], metric=world_dist)
+                    # ここでは時間は ナノ秒単位。 光は 1ナノ秒で 約0.3m 進む
+                    time_dist = pdist(event_df[["time"]])
+                    space_dist = pdist(event_df[["x", "y", "z"]])
+                    h_cluster = linkage(space_dist / (time_dist * 0.3 + 1e-8))
                     event_df.loc[:, "h_label"] = fcluster(h_cluster, 1)
 
                     # event_df = event_df[event_df.duplicated(subset=["h_label"], keep=False)]
@@ -145,11 +148,9 @@ def world_dist(u, v):
     2つのベクトルの世界距離を計算する
     各ベクトルは時刻(1次元)と空間(3次元)の値を持つこと。
     """
-    assert u.shape[0] == 4
-    assert v.shape[0] == 4
+    # assert u.shape[0] == 4
+    # assert v.shape[0] == 4
 
-    # ここでは時間は ナノ秒単位
-    # 光は 1ナノ秒で 約0.3m 進む
-    time = 0.3 * (u[0] - v[0]) ** 2 + 1e-8
+    time = euclidean(u[0], v[0]) + 1e-8
     space = euclidean(u[1:], v[1:])
     return space / time
