@@ -132,8 +132,12 @@ class Sqlite:
                     h_cluster = linkage(space_dist / (time_dist * 0.3 + 1e-8))
                     event_df.loc[:, "h_label"] = fcluster(h_cluster, 1)
 
-                    # event_df = event_df[event_df.duplicated(subset=["h_label"], keep=False)]
-                    event_df = event_df[event_df["h_label"] == event_df["h_label"].value_counts().idxmax()]
+                    # 単独のメンバーを除外
+                    event_df = event_df[event_df.duplicated(subset=["h_label"], keep=False)]
+
+                    # メンバー数が一番多いグループだけ残す
+                    #event_df = event_df[event_df["h_label"] == event_df["h_label"].value_counts().idxmax()]
+
                     event_df.drop(["h_label"], axis=1, inplace=True)
                 except Exception as e:
                     log.error(f"event_id: {event_id}, error: {e}")
