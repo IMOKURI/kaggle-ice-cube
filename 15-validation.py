@@ -5,6 +5,7 @@ import pandas as pd
 
 import src.utils as utils
 from src.ice_cube.scoring import angular_dist_score
+from src.ice_cube.submission import to_submission_df
 
 log = logging.getLogger(__name__)
 
@@ -18,16 +19,18 @@ def main(c):
     utils.basic_environment_info()
     utils.fix_seed(utils.choice_seed(c))
 
-    results = pd.read_csv("results.csv").set_index("event_id")
-    valid_df = pd.read_csv("valid.csv").set_index("event_id")
     submission_df = pd.read_csv("submission.csv").set_index("event_id")
-    submission_low_sigma = pd.read_csv("submission_low_sigma.csv").set_index("event_id")
-    submission_high_sigma = pd.read_csv("submission_high_sigma.csv").set_index("event_id")
+    valid_df = pd.read_csv("valid.csv").set_index("event_id")
 
     score = angular_dist_score(
         valid_df["azimuth"], valid_df["zenith"], submission_df["azimuth"], submission_df["zenith"]
     )
     log.info(f"Base score: {score}")
+
+    results = pd.read_csv("results.csv")
+
+    submission_low_sigma = to_submission_df(results[results["sigma"] <= 0.5].copy())
+    submission_high_sigma = to_submission_df(results[results["sigma"] > 0.5].copy())
 
     valid_low_sigma = valid_df[results["sigma"] <= 0.5]
     valid_high_sigma = valid_df[results["sigma"] > 0.5]

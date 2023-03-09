@@ -45,12 +45,6 @@ def main(c):
     submission_df.to_csv("submission.csv")
 
     if c.settings.is_training:
-        submission_low_sigma = to_submission_df(results[results["sigma"] <= 0.5].copy())
-        submission_high_sigma = to_submission_df(results[results["sigma"] > 0.5].copy())
-
-        submission_low_sigma.to_csv("submission_low_sigma.csv")
-        submission_high_sigma.to_csv("submission_high_sigma.csv")
-
         valid_data = dataloader.dataset.query_table("meta_table", ["event_id", "azimuth", "zenith"])
         valid_df = (
             pd.DataFrame(valid_data, columns=["event_id", "azimuth", "zenith"])
