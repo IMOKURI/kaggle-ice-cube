@@ -38,11 +38,11 @@ def main(c):
         additional_attributes=[c.settings.index_name],
     )
 
-    submission_df = to_submission_df(results)
-    submission_df.to_csv("submission.csv")
-
     results.loc[:, "sigma"] = 1 / np.sqrt(results["direction_kappa"])
     results.to_csv("results.csv")
+
+    submission_df = to_submission_df(results)
+    submission_df.to_csv("submission.csv")
 
     if c.settings.is_training:
         submission_low_sigma = to_submission_df(results[results["sigma"] <= 0.5].copy())

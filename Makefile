@@ -6,6 +6,7 @@ NOW = $(shell date '+%Y%m%d-%H%M%S-%N')
 GROUP := $(shell date '+%Y%m%d-%H%M')
 HEAD_COMMIT = $(shell git rev-parse HEAD)
 
+# ponkots-kaggle-gpu 起動した notebook で graphnet をインストールして docker commit でイメージを保存しておく
 up: ## Start jupyter notebook
 	docker run -d --name notebook -u $(shell id -u):$(shell id -g) --gpus all \
 		-v $(shell pwd):/home/jovyan/working -w /home/jovyan/working \
@@ -17,16 +18,35 @@ up: ## Start jupyter notebook
 		-e XDG_RUNTIME_DIR=/home/$(shell whoami)/.local/share \
 		--shm-size=2048g \
 		-p 8888:8888 \
-		ponkots-kaggle-gpu \
+		ponkots-kaggle-gpu-ice-cube \
 		jupyter notebook --no-browser --ip="0.0.0.0"
 
 down: ## Stop jupyter notebook
 	docker stop notebook
 	docker rm notebook
 
+create-db: ## Create DB
+	docker run -d -u $(shell id -u):$(shell id -g) \
+		-v $(shell pwd):/home/jovyan/working -w /home/jovyan/working \
+		-v /data/home/shared:/home/jovyan/input \
+		-e PYTHONUSERBASE=/home/$(shell whoami)/.local \
+		-e XDG_RUNTIME_DIR=/home/$(shell whoami)/.local/share \
+		-e LD_LIBRARY_PATH="/opt/conda/lib:/usr/lib/x86_64-linux-gnu" \
+		--shm-size=2048g \
+		ponkots-kaggle-gpu-ice-cube \
+		python ./00-create-db.py
+
 train: ## Run training
 	rm -rf ./checkpoints
-	LD_LIBRARY_PATH="/home/sugiyama/miniconda3/envs/graphnet/lib" python ./05-training.py
+	docker run -it --name training -u $(shell id -u):$(shell id -g) --gpus all \
+		-v $(shell pwd):/home/jovyan/working -w /home/jovyan/working \
+		-v /data/home/shared:/home/jovyan/input \
+		-e PYTHONUSERBASE=/home/$(shell whoami)/.local \
+		-e XDG_RUNTIME_DIR=/home/$(shell whoami)/.local/share \
+		-e LD_LIBRARY_PATH="/opt/conda/lib:/usr/lib/x86_64-linux-gnu" \
+		--shm-size=2048g \
+		ponkots-kaggle-gpu-ice-cube \
+		python ./05-training.py
 
 train2: ## Run training stage 2
 	rm -rf ./checkpoints

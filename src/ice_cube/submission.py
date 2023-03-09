@@ -2,22 +2,31 @@ import numpy as np
 import pandas as pd
 
 
-def to_submission_df(df, angle_post_fix="", vec_post_fix="") -> pd.DataFrame:
-    r = np.sqrt(
-        df["direction_x" + vec_post_fix] ** 2
-        + df["direction_y" + vec_post_fix] ** 2
-        + df["direction_z" + vec_post_fix] ** 2
-    )
-    df.loc[:, "zenith" + angle_post_fix] = np.arccos(df["direction_z" + vec_post_fix] / r)
-    df.loc[:, "azimuth" + angle_post_fix] = np.arctan2(
-        df["direction_y" + vec_post_fix], df["direction_x" + vec_post_fix]
-    )  # np.sign(results['true_y'])*np.arccos((results['true_x'])/(np.sqrt(results['true_x']**2 + results['true_y']**2)))
-    df["azimuth" + angle_post_fix][df["azimuth" + angle_post_fix] < 0] = (
-        df["azimuth" + angle_post_fix][df["azimuth" + angle_post_fix] < 0] + 2 * np.pi
-    )
+def to_submission_df(df) -> pd.DataFrame:
+    if "azimuth" in df.columns and "zenith" in df.columns:
+        ...
+        # 天頂角、方位角の推論結果を 座標に変換する
+        # df["direction_x_az"] = np.cos(df["azimuth"]) * np.sin(df["zenith"])
+        # df["direction_y_az"] = np.sin(df["azimuth"]) * np.sin(df["zenith"])
+        # df["direction_z_az"] = np.cos(df["zenith"])
+
+        # 座標推論結果と平均する
+        # df["direction_x"] = (df["direction_x"] + df["direction_x_az"]) / 2
+        # df["direction_y"] = (df["direction_y"] + df["direction_y_az"]) / 2
+        # df["direction_z"] = (df["direction_z"] + df["direction_z_az"]) / 2
+
+    # 座標を天頂角、方位角に変換する
+    r = np.sqrt(df["direction_x"] ** 2 + df["direction_y"] ** 2 + df["direction_z"] ** 2)
+
+    df.loc[:, "zenith"] = np.arccos(df["direction_z"] / r)
+    df.loc[:, "azimuth"] = np.arctan2(df["direction_y"], df["direction_x"])
+
+    # 方位角を 0-360 に補正
+    df["azimuth"][df["azimuth"] < 0] = df["azimuth"][df["azimuth"] < 0] + 2 * np.pi
 
     drop_these_columns = []
     for column in df.columns:
         if column not in ["event_id", "zenith", "azimuth"]:
             drop_these_columns.append(column)
-    return df.drop(columns=drop_these_columns).iloc[:, [0, 2, 1]].set_index("event_id")
+
+    return df.drop(columns=drop_these_columns).loc[:, ["event_id", "azimuth", "zenith"]].set_index("event_id")

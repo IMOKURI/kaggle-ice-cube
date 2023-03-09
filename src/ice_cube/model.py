@@ -29,34 +29,59 @@ def build_model(c, dataloader: Any) -> StandardModel:
         global_pooling_schemes=["min", "max", "mean"],
     )
 
-    task = DirectionReconstructionWithKappa(
-        hidden_size=gnn.nb_outputs,
-        target_labels=c.model_params.target,
-        loss_function=VonMisesFisher3DLoss(),
-    )
-    # azimuth_task = AzimuthReconstructionWithKappa(
-    #     hidden_size=gnn.nb_outputs,
-    #     target_labels=["azimuth"],
-    #     loss_function=VonMisesFisher2DLoss(),
-    # )
-    # zenith_task = ZenithReconstructionWithKappa(
-    #     hidden_size=gnn.nb_outputs,
-    #     target_labels=["zenith"],
-    #     loss_function=VonMisesFisher2DLoss(),
-    # )
-    prediction_columns = [
-        c.model_params.target + "_x",
-        c.model_params.target + "_y",
-        c.model_params.target + "_z",
-        c.model_params.target + "_kappa",
-    ]
+    tasks = []
+    prediction_columns = []
     additional_attributes = ["zenith", "azimuth", "event_id"]
+
+    if "direction" in c.model_params.tasks:
+        direction_task = DirectionReconstructionWithKappa(
+            hidden_size=gnn.nb_outputs,
+            target_labels=c.model_params.target,
+            loss_function=VonMisesFisher3DLoss(),
+        )
+        tasks.append(direction_task)
+
+        prediction_columns += [
+            c.model_params.target + "_x",
+            c.model_params.target + "_y",
+            c.model_params.target + "_z",
+            c.model_params.target + "_kappa",
+        ]
+
+    if "azimuth" in c.model_params.tasks:
+        azimuth_task = AzimuthReconstructionWithKappa(
+            hidden_size=gnn.nb_outputs,
+            target_labels="azimuth",
+            loss_function=VonMisesFisher2DLoss(),
+        )
+        tasks.append(azimuth_task)
+
+        prediction_columns += [
+            "azimuth",
+            "azimuth_kappa",
+        ]
+        additional_attributes.remove("azimuth")
+
+    if "zenith" in c.model_params.tasks:
+        zenith_task = ZenithReconstructionWithKappa(
+            hidden_size=gnn.nb_outputs,
+            target_labels="zenith",
+            loss_function=VonMisesFisher2DLoss(),
+        )
+        tasks.append(zenith_task)
+
+        prediction_columns += [
+            "zenith",
+            "zenith_kappa",
+        ]
+        additional_attributes.remove("zenith")
+
+    assert tasks != [], "At least one task is required."
 
     model = StandardModel(
         detector=detector,
         gnn=gnn,
-        tasks=[task],
-        # tasks=[azimuth_task, zenith_task],
+        tasks=tasks,
         optimizer_class=Adam,
         optimizer_kwargs={
             "lr": c.training_params.lr,
@@ -90,11 +115,28 @@ def load_pretrained_model(
     model = build_model(c, dataloader=dataloader)
     # model._inference_trainer = Trainer(config['fit'])
     model.load_state_dict(os.path.join(c.data.dir.pretrained, state_dict_path))
-    model.prediction_columns = [
-        c.model_params.target + "_x",
-        c.model_params.target + "_y",
-        c.model_params.target + "_z",
-        c.model_params.target + "_kappa",
-    ]
+
+    prediction_columns = []
+    if "direction" in c.model_params.tasks:
+        prediction_columns += [
+            c.model_params.target + "_x",
+            c.model_params.target + "_y",
+            c.model_params.target + "_z",
+            c.model_params.target + "_kappa",
+        ]
+
+    if "azimuth" in c.model_params.tasks:
+        prediction_columns += [
+            "azimuth",
+            "azimuth_kappa",
+        ]
+
+    if "zenith" in c.model_params.tasks:
+        prediction_columns += [
+            "zenith",
+            "zenith_kappa",
+        ]
+
+    model.prediction_columns = prediction_columns
     model.additional_attributes = ["event_id"]  #'zenith', 'azimuth',  not available in test data
     return model
