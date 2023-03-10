@@ -22,7 +22,7 @@ def to_submission_df(df) -> pd.DataFrame:
     df.loc[:, "azimuth"] = np.arctan2(df["direction_y"], df["direction_x"])
 
     # 方位角を 0-360 に補正
-    df["azimuth"][df["azimuth"] < 0] = df["azimuth"][df["azimuth"] < 0] + 2 * np.pi
+    df.loc[df["azimuth"] < 0, "azimuth"] = df["azimuth"][df["azimuth"] < 0] + 2 * np.pi
 
     drop_these_columns = []
     for column in df.columns:

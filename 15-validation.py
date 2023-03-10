@@ -32,6 +32,8 @@ def main(c):
     submission_low_sigma = to_submission_df(results[results["sigma"] <= 0.5].copy())
     submission_high_sigma = to_submission_df(results[results["sigma"] > 0.5].copy())
 
+    results.set_index("event_id", inplace=True)
+
     valid_low_sigma = valid_df[results["sigma"] <= 0.5]
     valid_high_sigma = valid_df[results["sigma"] > 0.5]
 
