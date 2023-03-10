@@ -31,26 +31,20 @@ create-db: ## Create DB
 		-v /data/home/shared:/home/jovyan/input \
 		-e PYTHONUSERBASE=/home/$(shell whoami)/.local \
 		-e XDG_RUNTIME_DIR=/home/$(shell whoami)/.local/share \
-		-e LD_LIBRARY_PATH="/opt/conda/lib:/usr/lib/x86_64-linux-gnu" \
 		--shm-size=2048g \
 		ponkots-kaggle-gpu-ice-cube \
 		python ./00-create-db.py
 
 train: ## Run training
 	rm -rf ./checkpoints
-	docker run -it --name training -u $(shell id -u):$(shell id -g) --gpus all \
+	docker run -d -u $(shell id -u):$(shell id -g) --gpus all \
 		-v $(shell pwd):/home/jovyan/working -w /home/jovyan/working \
 		-v /data/home/shared:/home/jovyan/input \
 		-e PYTHONUSERBASE=/home/$(shell whoami)/.local \
 		-e XDG_RUNTIME_DIR=/home/$(shell whoami)/.local/share \
-		-e LD_LIBRARY_PATH="/opt/conda/lib:/usr/lib/x86_64-linux-gnu" \
 		--shm-size=2048g \
-		ponkots-kaggle-gpu-ice-cube \
+		ponkots-graphnet \
 		python ./05-training.py
-
-train2: ## Run training stage 2
-	rm -rf ./checkpoints
-	LD_LIBRARY_PATH="/home/sugiyama/miniconda3/envs/graphnet/lib" python ./22-training2.py
 
 push: clean ## Publish notebook.
 	@rm -f ./notebook/inference.ipynb

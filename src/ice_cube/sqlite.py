@@ -149,16 +149,3 @@ class Sqlite:
 
             assert len(event_df) > 0
             self.add_records(event_df, self.pulse_table)
-
-
-def world_dist(u, v):
-    """
-    2つのベクトルの世界距離を計算する
-    各ベクトルは時刻(1次元)と空間(3次元)の値を持つこと。
-    """
-    # assert u.shape[0] == 4
-    # assert v.shape[0] == 4
-
-    time = euclidean(u[0], v[0]) + 1e-8
-    space = euclidean(u[1:], v[1:])
-    return space / time
