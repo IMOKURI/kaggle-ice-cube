@@ -59,7 +59,7 @@ def build_script(modules: List[str]):
 
     all_data = {}
     for module in modules:
-        to_encode = list(Path(module).glob("**/*.py")) + list(Path(module).glob("**/*.yaml"))
+        to_encode = list(Path(module).glob("**/*.py")) + list(Path(module).glob("config/**/*.yaml"))
         file_data = {str(path).replace("\\", "/"): encode_file(path) for path in to_encode}
         all_data.update(file_data)
 
