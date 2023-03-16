@@ -10,7 +10,7 @@ import pyarrow.parquet as pq
 import sqlalchemy
 from graphnet.data.sqlite.sqlite_utilities import create_table
 from scipy.cluster.hierarchy import fcluster, linkage
-from scipy.spatial.distance import euclidean, pdist
+from scipy.spatial.distance import pdist
 from tqdm import tqdm
 
 log = logging.getLogger(__name__)

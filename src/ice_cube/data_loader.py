@@ -86,12 +86,11 @@ def collate_fn(graphs: List[Data]) -> Batch:
     return Batch.from_data_list(graphs)
 
 
-def collate_fn_plus_minus(graphs: List[Data]) -> Batch:
+def collate_fn_minus_minus(graphs: List[Data]) -> Batch:
     batch = []
     for data in graphs:
-        data.x = torch.mul(data.x, torch.FloatTensor([-1, -1, -1, 1, 1, 1]))
+        data.x = torch.mul(data.x, torch.FloatTensor([-1, -1, 1, 1, 1, 1]))
         data.y = -data.y
-        data.z = -data.z
 
         if data.n_pulses > 1:
             batch.append(data)

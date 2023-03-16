@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 import src.utils as utils
-from src.ice_cube.data_loader import make_test_dataloader
+from src.ice_cube.data_loader import collate_fn_minus_minus, make_test_dataloader, make_test_dataloader_custom
 from src.ice_cube.model import load_pretrained_model
 from src.ice_cube.submission import to_submission_df
 
@@ -28,7 +28,12 @@ def main(c):
         database_path = os.path.join(c.data.dir.dataset, "test_db.db")
     log.info(f"Database path: {database_path}")
 
-    dataloader = make_test_dataloader(c, database_path)
+    log.info(f"Collate function: {c.inference_params.collate_fn}")
+    if c.inference_params.collate_fn == "minus_minus":
+        dataloader = make_test_dataloader_custom(c, database_path, collate_fn_minus_minus)
+    else:
+        dataloader = make_test_dataloader(c, database_path)
+
     model = load_pretrained_model(c, dataloader, state_dict_path=c.inference_params.model_path)
 
     results = model.predict_as_dataframe(
@@ -38,20 +43,17 @@ def main(c):
         additional_attributes=[c.settings.index_name],
     )
 
-    results.loc[:, "sigma"] = 1 / np.sqrt(results["direction_kappa"])
-    results.to_csv("results.csv")
+    if c.inference_params.collate_fn == "minus_minus":
+        results["direction_x"] = -1 * results["direction_x"]
+        results["direction_y"] = -1 * results["direction_y"]
 
-    submission_df = to_submission_df(results)
-    submission_df.to_csv("submission.csv")
+    results.loc[:, "sigma"] = 1 / np.sqrt(results["direction_kappa"])
+    results.to_csv(f"results_{c.inference_params.collate_fn}.csv")
 
     if c.settings.is_training:
         valid_data = dataloader.dataset.query_table("meta_table", ["event_id", "azimuth", "zenith"])
-        valid_df = (
-            pd.DataFrame(valid_data, columns=["event_id", "azimuth", "zenith"])
-            .set_index("event_id")
-            .loc[submission_df.index, :]
-        )
-        valid_df.to_csv("valid.csv")
+        valid_df = pd.DataFrame(valid_data, columns=["event_id", "azimuth", "zenith"]).set_index("event_id")
+        valid_df.to_csv(f"valid_{c.inference_params.collate_fn}.csv")
 
     log.info("Done.")
 

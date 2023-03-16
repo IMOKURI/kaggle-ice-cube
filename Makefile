@@ -37,14 +37,8 @@ create-db: ## Create DB
 
 train: ## Run training
 	rm -rf ./checkpoints
-	docker run -d -u $(shell id -u):$(shell id -g) --gpus all \
-		-v $(shell pwd):/home/jovyan/working -w /home/jovyan/working \
-		-v /data/home/shared:/home/jovyan/input \
-		-e PYTHONUSERBASE=/home/$(shell whoami)/.local \
-		-e XDG_RUNTIME_DIR=/home/$(shell whoami)/.local/share \
-		--shm-size=2048g \
-		ponkots-graphnet \
-		python ./05-training.py
+	rm -f ./nohup.out
+	LD_LIBRARY_PATH="/home/sugiyama/miniconda3/envs/graphnet/lib" nohup  python ./05-training.py &
 
 push: clean ## Publish notebook.
 	@rm -f ./notebook/inference.ipynb

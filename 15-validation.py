@@ -12,22 +12,26 @@ log = logging.getLogger(__name__)
 
 @hydra.main(config_path="config", config_name="main", version_base=None)
 def main(c):
-    if c.settings.in_kaggle:
+    if c.settings.in_kaggle or not c.settings.is_training:
         log.info("Skip validation.")
         return
 
     utils.basic_environment_info()
     utils.fix_seed(utils.choice_seed(c))
 
-    submission_df = pd.read_csv("submission.csv").set_index("event_id")
-    valid_df = pd.read_csv("valid.csv").set_index("event_id")
+    results = pd.read_csv(f"results_{c.inference_params.collate_fn}.csv")
+
+    submission_df = to_submission_df(results)
+    # submission_df.to_csv("submission.csv")
+
+    valid_df = (
+        pd.read_csv(f"valid_{c.inference_params.collate_fn}.csv").set_index("event_id").loc[submission_df.index, :]
+    )
 
     score = angular_dist_score(
         valid_df["azimuth"], valid_df["zenith"], submission_df["azimuth"], submission_df["zenith"]
     )
     log.info(f"Base score: {score}")
-
-    results = pd.read_csv("results.csv")
 
     submission_low_sigma = to_submission_df(results[results["sigma"] <= 0.5].copy())
     submission_high_sigma = to_submission_df(results[results["sigma"] > 0.5].copy())
