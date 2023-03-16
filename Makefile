@@ -45,6 +45,10 @@ push: clean ## Publish notebook.
 	@python encode.py .
 	@cd ./notebook && kaggle kernels push
 
+monitoring-lb: ## Monitor LB
+	rm -f ./nohup.out
+	nohup  python ./monitoring_lb.py &
+
 clean: clean-build clean-pyc ## Remove all build and python artifacts.
 
 clean-build: ## Remove build artifacts.
