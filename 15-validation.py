@@ -19,14 +19,10 @@ def main(c):
     utils.basic_environment_info()
     utils.fix_seed(utils.choice_seed(c))
 
-    results = pd.read_csv(f"results_{c.inference_params.collate_fn}.csv")
+    results = pd.read_csv(f"results.csv")
 
-    submission_df = to_submission_df(results)
-    # submission_df.to_csv("submission.csv")
-
-    valid_df = (
-        pd.read_csv(f"valid_{c.inference_params.collate_fn}.csv").set_index("event_id").loc[submission_df.index, :]
-    )
+    submission_df = pd.read_csv(f"submission.csv").set_index("event_id")
+    valid_df = pd.read_csv(f"valid.csv").set_index("event_id")
 
     score = angular_dist_score(
         valid_df["azimuth"], valid_df["zenith"], submission_df["azimuth"], submission_df["zenith"]

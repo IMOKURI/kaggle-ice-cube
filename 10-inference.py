@@ -28,14 +28,11 @@ def main(c):
         database_path = os.path.join(c.data.dir.dataset, "test_db.db")
     log.info(f"Database path: {database_path}")
 
-    log.info(f"Collate function: {c.inference_params.collate_fn}")
-    if c.inference_params.collate_fn == "minus_minus":
-        dataloader = make_test_dataloader_custom(c, database_path, collate_fn_minus_minus)
-    else:
-        dataloader = make_test_dataloader(c, database_path)
+    dataloader = make_test_dataloader(c, database_path)
 
     model = load_pretrained_model(c, dataloader, state_dict_path=c.inference_params.model_path)
 
+    log.info("Predict by default features.")
     results = model.predict_as_dataframe(
         gpus=[0],
         dataloader=dataloader,
@@ -43,17 +40,36 @@ def main(c):
         additional_attributes=[c.settings.index_name],
     )
 
-    if c.inference_params.collate_fn == "minus_minus":
-        results["direction_x"] = -1 * results["direction_x"]
-        results["direction_y"] = -1 * results["direction_y"]
+    log.info("Predict by features that invert x and y.")
+    dataloader = make_test_dataloader_custom(c, database_path, collate_fn_minus_minus)
+    results_minus_minus = model.predict_as_dataframe(
+        gpus=[0],
+        dataloader=dataloader,
+        prediction_columns=model.prediction_columns,
+        additional_attributes=[c.settings.index_name],
+    )
 
-    results.loc[:, "sigma"] = 1 / np.sqrt(results["direction_kappa"])
-    results.to_csv(f"results_{c.inference_params.collate_fn}.csv")
+    results_minus_minus["direction_x"] = -results_minus_minus["direction_x"]
+    results_minus_minus["direction_y"] = -results_minus_minus["direction_y"]
+
+    log.info("Ensemble.")
+    results = (results + results_minus_minus) / 2
+
+    log.info("Make submission.")
+    submission_df = to_submission_df(results)
+    submission_df.to_csv("submission.csv")
 
     if c.settings.is_training:
+        results.loc[:, "sigma"] = 1 / np.sqrt(results["direction_kappa"])
+        results.to_csv("results.csv")
+
         valid_data = dataloader.dataset.query_table("meta_table", ["event_id", "azimuth", "zenith"])
-        valid_df = pd.DataFrame(valid_data, columns=["event_id", "azimuth", "zenith"]).set_index("event_id")
-        valid_df.to_csv(f"valid_{c.inference_params.collate_fn}.csv")
+        valid_df = (
+            pd.DataFrame(valid_data, columns=["event_id", "azimuth", "zenith"])
+            .set_index("event_id")
+            .loc[submission_df.index, :]
+        )
+        valid_df.to_csv("valid.csv")
 
     log.info("Done.")
 

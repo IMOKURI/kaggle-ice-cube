@@ -82,6 +82,5 @@ model_params:
     # - zenith
 
 inference_params:
-  collate_fn: default
   model_path: "dynedge-pretrained/dynedge_pretrained_batch_1_to_50/state_dict.pth"
   # model_path: "output/2023-03-09_00-33-43/state_dict.pth"
