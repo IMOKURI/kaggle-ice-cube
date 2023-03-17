@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 class _DistTransformer(BaseTransformer):
 
-    TRANSFORMS = {"standard", "min-max", "box-cox", "yeo-johnson", "rankgauss", "ordinal"}
+    TRANSFORMS = {"standard", "min-max", "box-cox", "yeo-johnson", "rankgauss", "uniform", "ordinal"}
 
     def __init__(self, transform="standard"):
         assert transform in self.TRANSFORMS
@@ -32,6 +32,8 @@ class _DistTransformer(BaseTransformer):
             self.transformer = PowerTransformer(method="yeo-johnson")
         elif self.t == "rankgauss":
             self.transformer = QuantileTransformer(random_state=440, output_distribution="normal")
+        elif self.t == "uniform":
+            self.transformer = QuantileTransformer(random_state=440)
         elif self.t == "ordinal":
             self.transformer = OrdinalEncoder()
         else:
@@ -66,7 +68,7 @@ class DistTransformer(BaseTransformer):
 
     Availbale transforms:
         TRANSFORMS = {
-            'standard', 'min-max', 'box-cox', 'yeo-johnson', 'rankgauss', 'ordinal'
+            'standard', 'min-max', 'box-cox', 'yeo-johnson', 'rankgauss', 'uniform', 'ordinal'
         }
     """
 

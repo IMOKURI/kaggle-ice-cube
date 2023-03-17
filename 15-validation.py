@@ -19,10 +19,10 @@ def main(c):
     utils.basic_environment_info()
     utils.fix_seed(utils.choice_seed(c))
 
-    results = pd.read_csv(f"results.csv")
+    results = pd.read_csv("results.csv")
 
-    submission_df = pd.read_csv(f"submission.csv").set_index("event_id")
-    valid_df = pd.read_csv(f"valid.csv").set_index("event_id")
+    submission_df = pd.read_csv("submission.csv").set_index("event_id")
+    valid_df = pd.read_csv("valid.csv").set_index("event_id")
 
     score = angular_dist_score(
         valid_df["azimuth"], valid_df["zenith"], submission_df["azimuth"], submission_df["zenith"]
