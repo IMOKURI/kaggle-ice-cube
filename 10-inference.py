@@ -50,21 +50,21 @@ def main(c):
     predictions_minus_minus[:, 0] *= -1
     predictions_minus_minus[:, 1] *= -1
 
-    # log.info("Predict by features that invert x.")
-    # dataloader = make_test_dataloader_custom(c, database_path, collate_fn_minus_plus)
-    # results = model.predict(gpus=[0], dataloader=dataloader)
-    # predictions_minus_plus = torch.cat(results, dim=1).detach().cpu().numpy()
-    # predictions_minus_plus[:, 0] *= -1
+    log.info("Predict by features that invert x.")
+    dataloader = make_test_dataloader_custom(c, database_path, collate_fn_minus_plus)
+    results = model.predict(gpus=[0], dataloader=dataloader)
+    predictions_minus_plus = torch.cat(results, dim=1).detach().cpu().numpy()
+    predictions_minus_plus[:, 0] *= -1
 
-    # log.info("Predict by features that invert y.")
-    # dataloader = make_test_dataloader_custom(c, database_path, collate_fn_plus_minus)
-    # results = model.predict(gpus=[0], dataloader=dataloader)
-    # predictions_plus_minus = torch.cat(results, dim=1).detach().cpu().numpy()
-    # predictions_plus_minus[:, 1] *= -1
+    log.info("Predict by features that invert y.")
+    dataloader = make_test_dataloader_custom(c, database_path, collate_fn_plus_minus)
+    results = model.predict(gpus=[0], dataloader=dataloader)
+    predictions_plus_minus = torch.cat(results, dim=1).detach().cpu().numpy()
+    predictions_plus_minus[:, 1] *= -1
 
     log.info("Ensemble.")
-    predictions = (predictions + predictions_minus_minus) / 2.0
-    # predictions = (predictions + predictions_minus_minus + predictions_minus_plus + predictions_plus_minus) / 4.0
+    # predictions = (predictions + predictions_minus_minus) / 2.0
+    predictions = (predictions + predictions_minus_minus + predictions_minus_plus + predictions_plus_minus) / 4.0
 
     predictions_df = pd.DataFrame(dataloader.dataset.query_table("meta_table", ["event_id"]), columns=["event_id"])
     predictions_df[["direction_x", "direction_y", "direction_z", "direction_kappa"]] = predictions
