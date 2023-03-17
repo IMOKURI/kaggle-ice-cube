@@ -30,7 +30,7 @@ settings:
   # multi_gpu: True
 
   in_kaggle: False
-  is_training: True
+  is_training: False
 
   index_name: event_id
   # label_name: label
