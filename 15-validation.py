@@ -19,33 +19,29 @@ def main(c):
     utils.basic_environment_info()
     utils.fix_seed(utils.choice_seed(c))
 
-    results = pd.read_csv("results.csv")
-
+    results = pd.read_csv("results.csv").set_index("event_id")
     submission_df = pd.read_csv("submission.csv").set_index("event_id")
-    valid_df = pd.read_csv("valid.csv").set_index("event_id")
 
     score = angular_dist_score(
-        valid_df["azimuth"], valid_df["zenith"], submission_df["azimuth"], submission_df["zenith"]
+        results["azimuth_y"], results["zenith_y"], submission_df["azimuth"], submission_df["zenith"]
     )
     log.info(f"Base score: {score}")
 
-    submission_low_sigma = to_submission_df(results[results["sigma"] <= 0.5].copy())
-    submission_high_sigma = to_submission_df(results[results["sigma"] > 0.5].copy())
+    submission_low_sigma = to_submission_df(results[results["sigma"] <= 0.5].reset_index())
+    submission_high_sigma = to_submission_df(results[results["sigma"] > 0.5].reset_index())
 
-    results.set_index("event_id", inplace=True)
-
-    valid_low_sigma = valid_df[results["sigma"] <= 0.5]
-    valid_high_sigma = valid_df[results["sigma"] > 0.5]
+    results_low_sigma = results[results["sigma"] <= 0.5]
+    results_high_sigma = results[results["sigma"] > 0.5]
 
     score_low_sigma = angular_dist_score(
-        valid_low_sigma["azimuth"],
-        valid_low_sigma["zenith"],
+        results_low_sigma["azimuth_y"],
+        results_low_sigma["zenith_y"],
         submission_low_sigma["azimuth"],
         submission_low_sigma["zenith"],
     )
     score_high_sigma = angular_dist_score(
-        valid_high_sigma["azimuth"],
-        valid_high_sigma["zenith"],
+        results_high_sigma["azimuth_y"],
+        results_high_sigma["zenith_y"],
         submission_high_sigma["azimuth"],
         submission_high_sigma["zenith"],
     )

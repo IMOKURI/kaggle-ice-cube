@@ -45,7 +45,6 @@ global_params:
   # method: nn
 
 preprocess_params:
-  enable_h_cluster: False
 
 cv_params:
   # n_fold: 7
