@@ -59,7 +59,29 @@ def main(c):
 
         log.info("Predict by default features.")
         results = model.predict(gpus=[0], dataloader=dataloader)
-        results = torch.cat(results, dim=1).detach().cpu().numpy()
+        results_plus_plus = torch.cat(results, dim=1).detach().cpu().numpy()
+
+        log.info("Predict by features that invert x and y.")
+        dataloader = make_test_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn_minus_minus)
+        results = model.predict(gpus=[0], dataloader=dataloader)
+        results_minus_minus = torch.cat(results, dim=1).detach().cpu().numpy()
+        results_minus_minus[:, 0] *= -1
+        results_minus_minus[:, 1] *= -1
+
+        log.info("Predict by features that invert x.")
+        dataloader = make_test_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn_minus_plus)
+        results = model.predict(gpus=[0], dataloader=dataloader)
+        results_minus_plus = torch.cat(results, dim=1).detach().cpu().numpy()
+        results_minus_plus[:, 0] *= -1
+
+        log.info("Predict by features that invert y.")
+        dataloader = make_test_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn_plus_minus)
+        results = model.predict(gpus=[0], dataloader=dataloader)
+        results_plus_minus = torch.cat(results, dim=1).detach().cpu().numpy()
+        results_plus_minus[:, 1] *= -1
+
+        log.info("Ensemble 4.")
+        results = (results_plus_plus + results_minus_minus + results_minus_plus + results_plus_minus) / 4.0
 
         predictions.append(results)
         event_ids.append(dataloader.dataset.event_ids)
