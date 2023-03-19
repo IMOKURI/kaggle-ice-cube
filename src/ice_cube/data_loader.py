@@ -87,41 +87,6 @@ def make_test_dataloader(c, database_path, selection=None):
     return dataloader
 
 
-def make_test_dataloader_custom(c, database_path, collate_fn: Callable, selection=None):
-    dataset = SQLiteDataset(
-        path=database_path,
-        pulsemaps=[c.data.ice_cube.pulse_table],
-        features=FEATURES.KAGGLE,
-        truth=TRUTH.KAGGLE,
-        selection=selection,
-        node_truth=None,
-        truth_table=c.data.ice_cube.meta_table,
-        node_truth_table=None,
-        string_selection=None,
-        loss_weight_table=None,
-        loss_weight_column=None,
-        index_column=c.settings.index_name,
-    )
-
-    # adds custom labels to dataset
-    labels = None  # labels={"direction": Direction()}
-    if isinstance(labels, dict):
-        for label in labels.keys():
-            dataset.add_label(key=label, fn=labels[label])
-
-    dataloader = DataLoader(
-        dataset,
-        batch_size=c.training_params.batch_size,
-        shuffle=False,
-        num_workers=c.training_params.num_workers,
-        collate_fn=collate_fn,
-        persistent_workers=True,
-        prefetch_factor=2,
-    )
-
-    return dataloader
-
-
 def make_test_dataloader_batch(c, batch_id: int, meta_df: pd.DataFrame, sensor_df: pd.DataFrame, collate_fn: Callable):
     dataset = IceCubeBatchDataset(c, batch_id, meta_df, sensor_df)
 

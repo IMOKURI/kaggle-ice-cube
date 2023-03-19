@@ -44,10 +44,17 @@ def main(c):
     batch_size = 200_000
     metadata_iter = pq.ParquetFile(metadata_path).iter_batches(batch_size=batch_size)
 
+    train_batch = list(
+        range(c.data.ice_cube.train_batch, c.data.ice_cube.train_batch + c.data.ice_cube.train_batch_size)
+    )
+
     event_ids = []
     predictions = []
     validations_df = []
     for n, meta_df in enumerate(metadata_iter):
+        if c.settings.is_training and n not in train_batch:
+            continue
+
         meta_df = meta_df.to_pandas()
 
         batch_id = pd.unique(meta_df["batch_id"])
@@ -61,36 +68,45 @@ def main(c):
         results = model.predict(gpus=[0], dataloader=dataloader)
         results_plus_plus = torch.cat(results, dim=1).detach().cpu().numpy()
 
-        log.info("Predict by features that invert x and y.")
-        dataloader = make_test_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn_minus_minus)
-        results = model.predict(gpus=[0], dataloader=dataloader)
-        results_minus_minus = torch.cat(results, dim=1).detach().cpu().numpy()
-        results_minus_minus[:, 0] *= -1
-        results_minus_minus[:, 1] *= -1
+        ensemble2 = False
+        ensemble4 = False
 
-        log.info("Predict by features that invert x.")
-        dataloader = make_test_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn_minus_plus)
-        results = model.predict(gpus=[0], dataloader=dataloader)
-        results_minus_plus = torch.cat(results, dim=1).detach().cpu().numpy()
-        results_minus_plus[:, 0] *= -1
+        if ensemble2 or ensemble4:
+            log.info("Predict by features that invert x and y.")
+            dataloader = make_test_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn_minus_minus)
+            results = model.predict(gpus=[0], dataloader=dataloader)
+            results_minus_minus = torch.cat(results, dim=1).detach().cpu().numpy()
+            results_minus_minus[:, 0] *= -1
+            results_minus_minus[:, 1] *= -1
 
-        log.info("Predict by features that invert y.")
-        dataloader = make_test_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn_plus_minus)
-        results = model.predict(gpus=[0], dataloader=dataloader)
-        results_plus_minus = torch.cat(results, dim=1).detach().cpu().numpy()
-        results_plus_minus[:, 1] *= -1
+            if ensemble2:
+                log.info("Ensemble 2.")
+                results = (results_plus_plus + results_minus_minus) / 2.0
 
-        log.info("Ensemble 4.")
-        results = (results_plus_plus + results_minus_minus + results_minus_plus + results_plus_minus) / 4.0
+            if ensemble4:
+                log.info("Predict by features that invert x.")
+                dataloader = make_test_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn_minus_plus)
+                results = model.predict(gpus=[0], dataloader=dataloader)
+                results_minus_plus = torch.cat(results, dim=1).detach().cpu().numpy()
+                results_minus_plus[:, 0] *= -1
+
+                log.info("Predict by features that invert y.")
+                dataloader = make_test_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn_plus_minus)
+                results = model.predict(gpus=[0], dataloader=dataloader)
+                results_plus_minus = torch.cat(results, dim=1).detach().cpu().numpy()
+                results_plus_minus[:, 1] *= -1
+
+                log.info("Ensemble 4.")
+                results = (results_plus_plus + results_minus_minus + results_minus_plus + results_plus_minus) / 4.0
+
+        else:
+            results = results_plus_plus
 
         predictions.append(results)
         event_ids.append(dataloader.dataset.event_ids)
 
         if c.settings.is_training:
             validations_df.append(meta_df[["event_id", "azimuth", "zenith"]])
-
-            if n + 1 >= c.data.ice_cube.train_batch_size:
-                break
 
     event_ids = np.concatenate(event_ids)
     predictions = np.concatenate(predictions)
