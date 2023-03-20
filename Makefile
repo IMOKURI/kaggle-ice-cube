@@ -38,7 +38,15 @@ create-db: ## Create DB
 train: ## Run training
 	rm -rf ./checkpoints
 	rm -f ./nohup.out
-	LD_LIBRARY_PATH="/home/sugiyama/miniconda3/envs/graphnet/lib" nohup  python ./05-training.py &
+	LD_LIBRARY_PATH="/home/sugiyama/miniconda3/envs/graphnet/lib" nohup python ./05-training.py \
+		data.dir.input=/data/home/shared/icecube-neutrinos-in-deep-ice &
+
+train2: ## Run training stage2
+	rm -rf ./checkpoints
+	rm -f ./nohup.out
+	LD_LIBRARY_PATH="/home/sugiyama/miniconda3/envs/graphnet/lib" nohup python ./05-training.py \
+		training_params.stage2=True \
+		data.dir.input=/data/home/shared/icecube-neutrinos-in-deep-ice &
 
 push: clean ## Publish notebook.
 	@rm -f ./notebook/inference.ipynb

@@ -149,5 +149,6 @@ submission*.csv
 valid*.csv
 results*.csv
 *.zip
+*.parquet
 
 nohup.out

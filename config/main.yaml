@@ -54,6 +54,7 @@ cv_params:
   # time_name: ""
 
 training_params:
+  stage2: False
   epoch: 50
   es_patience: 5
   batch_size: 16

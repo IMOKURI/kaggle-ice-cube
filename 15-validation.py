@@ -50,6 +50,8 @@ def main(c):
     )
     log.info(f"Low sigma score: {score_low_sigma}, High sigma score: {score_high_sigma}")
 
+    # results_high_sigma.to_parquet("results_high_sigma.parquet")
+
     log.info("Done.")
 
 

@@ -1,4 +1,4 @@
-from typing import Callable, List
+from typing import Callable, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -13,7 +13,9 @@ from torch_geometric.data import Batch, Data
 class IceCubeBatchDataset(Dataset):
     """1つのbatchをtorchのDatasetとする"""
 
-    def __init__(self, c, batch_id: int, meta_df: pd.DataFrame, sensor_df: pd.DataFrame):
+    def __init__(
+        self, c, batch_id: int, meta_df: pd.DataFrame, sensor_df: pd.DataFrame, event_ids: Optional[List] = None
+    ):
         super().__init__()
         self.c = c
         self.batch_id = batch_id
@@ -26,7 +28,10 @@ class IceCubeBatchDataset(Dataset):
             self.input_batch_dir = c.data.dir.input_test
         self.batch_df = pd.read_parquet(path=f"{self.input_batch_dir}/batch_{batch_id}.parquet").reset_index()
 
-        self.event_ids = self.batch_df["event_id"].unique()
+        if event_ids is None:
+            self.event_ids = self.batch_df["event_id"].unique()
+        else:
+            self.event_ids = list(set(self.batch_df["event_id"].unique()) & set(event_ids))
 
         self._preprocess()
 
@@ -46,7 +51,24 @@ class IceCubeBatchDataset(Dataset):
 
         x = event[FEATURES.KAGGLE].to_numpy()
         x = torch.tensor(x, dtype=torch.float32)
-        data = Data(x=x, n_pulses=torch.tensor(x.shape[0], dtype=torch.int32), features=FEATURES.KAGGLE)
+
+        if self.c.settings.is_training:
+            azimuth = self.meta_df[self.meta_df["event_id"] == event_id]["azimuth"].to_numpy()[0]
+            zenith = self.meta_df[self.meta_df["event_id"] == event_id]["zenith"].to_numpy()[0]
+
+            data = Data(
+                x=x,
+                n_pulses=torch.tensor(x.shape[0], dtype=torch.int32),
+                features=FEATURES.KAGGLE,
+                azimuth=torch.tensor(azimuth, dtype=torch.float32),
+                zenith=torch.tensor(zenith, dtype=torch.float32),
+            )
+        else:
+            data = Data(
+                x=x,
+                n_pulses=torch.tensor(x.shape[0], dtype=torch.int32),
+                features=FEATURES.KAGGLE,
+            )
         return data
 
 
@@ -87,8 +109,15 @@ def make_test_dataloader(c, database_path, selection=None):
     return dataloader
 
 
-def make_test_dataloader_batch(c, batch_id: int, meta_df: pd.DataFrame, sensor_df: pd.DataFrame, collate_fn: Callable):
-    dataset = IceCubeBatchDataset(c, batch_id, meta_df, sensor_df)
+def make_test_dataloader_batch(
+    c,
+    batch_id: int,
+    meta_df: pd.DataFrame,
+    sensor_df: pd.DataFrame,
+    collate_fn: Callable,
+    event_ids: Optional[List] = None,
+):
+    dataset = IceCubeBatchDataset(c, batch_id, meta_df, sensor_df, event_ids)
 
     dataloader = DataLoader(
         dataset,
@@ -114,6 +143,18 @@ def downsample_pulse(data: Data) -> Data:
 def collate_fn(graphs: List[Data]) -> Batch:
     graphs = [downsample_pulse(g) for g in graphs if g.n_pulses > 1]
     return Batch.from_data_list(graphs)
+
+
+def collate_fn_training(graphs: List[Data]) -> Batch:
+    batch = []
+    for data in graphs:
+        data = downsample_pulse(data)
+        data["direction"] = Direction()(data)
+
+        if data.n_pulses > 1:
+            batch.append(data)
+
+    return Batch.from_data_list(batch)
 
 
 def collate_fn_minus_minus(graphs: List[Data]) -> Batch:
