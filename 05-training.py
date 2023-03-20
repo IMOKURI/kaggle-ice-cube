@@ -28,7 +28,7 @@ def main(c):
     database_path = os.path.join(c.data.dir.dataset, f"train_{c.data.ice_cube.train_batch}_db.db")
     train_loader, valid_loader = make_train_dataloader(c, database_path)
 
-    model = build_model(c, train_loader)
+    model = build_model(c, train_loader, custom_aggregation=True)
 
     callbacks = [
         EarlyStopping(

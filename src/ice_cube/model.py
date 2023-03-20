@@ -1,10 +1,9 @@
 import logging
 import os
-from typing import Any
+from typing import Any, Optional
 
 from graphnet.models import StandardModel
 from graphnet.models.detector.icecube import IceCubeKaggle
-from graphnet.models.gnn import DynEdge
 from graphnet.models.graph_builders import KNNGraphBuilder
 from graphnet.models.task.reconstruction import (
     AzimuthReconstructionWithKappa,
@@ -15,10 +14,12 @@ from graphnet.training.callbacks import PiecewiseLinearLR
 from graphnet.training.loss_functions import VonMisesFisher2DLoss, VonMisesFisher3DLoss
 from torch.optim.adam import Adam
 
+from .dynedge import DynEdge
+
 log = logging.getLogger(__name__)
 
 
-def build_model(c, dataloader: Any) -> StandardModel:
+def build_model(c, dataloader: Any, custom_aggregation: Optional[bool] = False) -> StandardModel:
     """Builds GNN from config"""
     # Building model
     detector = IceCubeKaggle(
@@ -26,7 +27,8 @@ def build_model(c, dataloader: Any) -> StandardModel:
     )
     gnn = DynEdge(
         nb_inputs=detector.nb_outputs,
-        global_pooling_schemes=["min", "max", "mean"],
+        global_pooling_schemes=["min", "max", "mean", "dummy"],
+        custom_aggregation=custom_aggregation
     )
 
     tasks = []

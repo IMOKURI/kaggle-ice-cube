@@ -1,9 +1,9 @@
 from typing import Callable, List
 
+import numpy as np
 import pandas as pd
 import torch
 from graphnet.data.constants import FEATURES, TRUTH
-from graphnet.data.sqlite import SQLiteDataset
 from graphnet.training.labels import Direction
 from graphnet.training.utils import make_dataloader, make_train_validation_dataloader
 from torch.utils.data import DataLoader, Dataset
@@ -103,16 +103,24 @@ def make_test_dataloader_batch(c, batch_id: int, meta_df: pd.DataFrame, sensor_d
     return dataloader
 
 
+def downsample_pulse(data: Data) -> Data:
+    pulse_limit = 300
+    if data.n_pulses > pulse_limit:
+        data.x = data.x[np.random.choice(data.n_pulses, pulse_limit)]
+        data.n_pulses = torch.tensor(pulse_limit, dtype=torch.int32)
+    return data
+
+
 def collate_fn(graphs: List[Data]) -> Batch:
-    graphs = [g for g in graphs if g.n_pulses > 1]
+    graphs = [downsample_pulse(g) for g in graphs if g.n_pulses > 1]
     return Batch.from_data_list(graphs)
 
 
 def collate_fn_minus_minus(graphs: List[Data]) -> Batch:
     batch = []
     for data in graphs:
+        data = downsample_pulse(data)
         data.x = torch.mul(data.x, torch.FloatTensor([-1, -1, 1, 1, 1, 1]))
-        # data.y = -data.y
 
         if data.n_pulses > 1:
             batch.append(data)
@@ -123,8 +131,8 @@ def collate_fn_minus_minus(graphs: List[Data]) -> Batch:
 def collate_fn_plus_minus(graphs: List[Data]) -> Batch:
     batch = []
     for data in graphs:
+        data = downsample_pulse(data)
         data.x = torch.mul(data.x, torch.FloatTensor([1, -1, 1, 1, 1, 1]))
-        # data.y = -data.y
 
         if data.n_pulses > 1:
             batch.append(data)
@@ -135,6 +143,7 @@ def collate_fn_plus_minus(graphs: List[Data]) -> Batch:
 def collate_fn_minus_plus(graphs: List[Data]) -> Batch:
     batch = []
     for data in graphs:
+        data = downsample_pulse(data)
         data.x = torch.mul(data.x, torch.FloatTensor([-1, 1, 1, 1, 1, 1]))
 
         if data.n_pulses > 1:
