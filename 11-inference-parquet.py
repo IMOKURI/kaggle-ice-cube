@@ -68,10 +68,12 @@ def main(c):
         results = model.predict(gpus=[0], dataloader=dataloader)
         results_plus_plus = torch.cat(results, dim=1).detach().cpu().numpy()
 
-        ensemble2 = False
-        ensemble4 = False
+        if c.settings.is_training:
+            n_ensemble = 1
+        else:
+            n_ensemble = 4
 
-        if ensemble2 or ensemble4:
+        if n_ensemble > 1:
             log.info("Predict by features that invert x and y.")
             dataloader = make_test_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn_minus_minus)
             results = model.predict(gpus=[0], dataloader=dataloader)
@@ -79,11 +81,7 @@ def main(c):
             results_minus_minus[:, 0] *= -1
             results_minus_minus[:, 1] *= -1
 
-            if ensemble2:
-                log.info("Ensemble 2.")
-                results = (results_plus_plus + results_minus_minus) / 2.0
-
-            if ensemble4:
+            if n_ensemble > 2:
                 log.info("Predict by features that invert x.")
                 dataloader = make_test_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn_minus_plus)
                 results = model.predict(gpus=[0], dataloader=dataloader)
@@ -98,6 +96,10 @@ def main(c):
 
                 log.info("Ensemble 4.")
                 results = (results_plus_plus + results_minus_minus + results_minus_plus + results_plus_minus) / 4.0
+
+            else:
+                log.info("Ensemble 2.")
+                results = (results_plus_plus + results_minus_minus) / 2.0
 
         else:
             results = results_plus_plus
