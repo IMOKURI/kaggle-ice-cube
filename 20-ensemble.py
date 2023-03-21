@@ -18,12 +18,11 @@ def main(c):
     utils.basic_environment_info()
     utils.fix_seed(utils.choice_seed(c))
 
-    if c.training_params.stage2:
-        results = pd.read_csv("results_stage2.csv").set_index("event_id")
-        submission_df = pd.read_csv("submission_stage2.csv").set_index("event_id")
-    else:
-        results = pd.read_csv("results.csv").set_index("event_id")
-        submission_df = pd.read_csv("submission.csv").set_index("event_id")
+    results = pd.read_csv("results.csv").set_index("event_id")
+    results_stage2 = pd.read_csv("results_stage2.csv").set_index("event_id")
+
+    results.loc[results_stage2.index, :] = (results[results.index.isin(results_stage2.index)] + results_stage2) / 2.0
+    submission_df = to_submission_df(results.reset_index())
 
     if c.settings.is_training:
         score = angular_dist_score(
@@ -54,10 +53,6 @@ def main(c):
             submission_high_sigma["zenith"],
         )
         log.info(f"Low sigma score: {score_low_sigma}, High sigma score: {score_high_sigma}")
-
-    if not c.training_params.stage2:
-        results_low_sigma.to_parquet("results_low_sigma.parquet")
-        results_high_sigma.to_parquet("results_high_sigma.parquet")
 
     log.info("Done.")
 

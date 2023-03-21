@@ -19,7 +19,7 @@ from .dynedge import DynEdge
 log = logging.getLogger(__name__)
 
 
-def build_model(c, dataloader: Any, custom_aggregation: Optional[bool] = False) -> StandardModel:
+def build_model(c, dataloader: Any, custom_aggregation: bool = False) -> StandardModel:
     """Builds GNN from config"""
     # Building model
     detector = IceCubeKaggle(
@@ -113,8 +113,9 @@ def load_pretrained_model(
     c,
     dataloader,
     state_dict_path,
+    custom_aggregation: bool = False
 ) -> StandardModel:
-    model = build_model(c, dataloader=dataloader)
+    model = build_model(c, dataloader=dataloader, custom_aggregation=custom_aggregation)
     # model._inference_trainer = Trainer(config['fit'])
     model.load_state_dict(os.path.join(c.data.dir.pretrained, state_dict_path))
 

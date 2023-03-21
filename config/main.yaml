@@ -83,4 +83,4 @@ model_params:
 
 inference_params:
   model_path: "dynedge-pretrained/dynedge_pretrained_batch_1_to_50/state_dict.pth"
-  # model_path: "output/2023-03-09_00-33-43/state_dict.pth"
+  model_path_low: "output/2023-03-21_11-40-25/state_dict.pth"

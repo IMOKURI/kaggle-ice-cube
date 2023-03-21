@@ -17,7 +17,7 @@ from src.ice_cube.data_loader import (
     collate_fn_minus_minus,
     collate_fn_minus_plus,
     collate_fn_plus_minus,
-    make_test_dataloader_batch,
+    make_dataloader_batch,
 )
 from src.ice_cube.model import load_pretrained_model
 from src.ice_cube.submission import to_submission_df
@@ -33,6 +33,10 @@ def main(c):
 
     utils.basic_environment_info()
     utils.fix_seed(utils.choice_seed(c))
+
+    if c.training_params.stage2:
+        log.info("Stage2 inference.")
+        results_stage1 = pd.read_parquet("results_low_sigma.parquet")
 
     if c.settings.is_training:
         metadata_path = os.path.join(c.data.dir.input, "train_meta.parquet")
@@ -61,21 +65,30 @@ def main(c):
         assert len(batch_id) == 1, "contains multiple batch_ids. Did you set the batch_size correctly?"
         log.info(f"Batch {batch_id} ...")
 
-        dataloader = make_test_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn)
-        model = load_pretrained_model(c, dataloader, state_dict_path=c.inference_params.model_path)
+        if c.training_params.stage2:
+            dataloader = make_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn, results_stage1.index)
+            model = load_pretrained_model(c, dataloader, state_dict_path=c.inference_params.model_path_low)
+        else:
+            dataloader = make_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn)
+            model = load_pretrained_model(c, dataloader, state_dict_path=c.inference_params.model_path)
 
         log.info("Predict by default features.")
         results = model.predict(gpus=[0], dataloader=dataloader)
         results_plus_plus = torch.cat(results, dim=1).detach().cpu().numpy()
 
         if c.settings.is_training:
-            n_ensemble = 1
+            n_ensemble = 2
         else:
             n_ensemble = 4
 
         if n_ensemble > 1:
             log.info("Predict by features that invert x and y.")
-            dataloader = make_test_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn_minus_minus)
+            if c.training_params.stage2:
+                dataloader = make_dataloader_batch(
+                    c, batch_id[0], meta_df, sensor_df, collate_fn_minus_minus, results_stage1.index
+                )
+            else:
+                dataloader = make_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn_minus_minus)
             results = model.predict(gpus=[0], dataloader=dataloader)
             results_minus_minus = torch.cat(results, dim=1).detach().cpu().numpy()
             results_minus_minus[:, 0] *= -1
@@ -83,13 +96,23 @@ def main(c):
 
             if n_ensemble > 2:
                 log.info("Predict by features that invert x.")
-                dataloader = make_test_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn_minus_plus)
+                if c.training_params.stage2:
+                    dataloader = make_dataloader_batch(
+                        c, batch_id[0], meta_df, sensor_df, collate_fn_minus_plus, results_stage1.index
+                    )
+                else:
+                    dataloader = make_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn_minus_plus)
                 results = model.predict(gpus=[0], dataloader=dataloader)
                 results_minus_plus = torch.cat(results, dim=1).detach().cpu().numpy()
                 results_minus_plus[:, 0] *= -1
 
                 log.info("Predict by features that invert y.")
-                dataloader = make_test_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn_plus_minus)
+                if c.training_params.stage2:
+                    dataloader = make_dataloader_batch(
+                        c, batch_id[0], meta_df, sensor_df, collate_fn_plus_minus, results_stage1.index
+                    )
+                else:
+                    dataloader = make_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn_plus_minus)
                 results = model.predict(gpus=[0], dataloader=dataloader)
                 results_plus_minus = torch.cat(results, dim=1).detach().cpu().numpy()
                 results_plus_minus[:, 1] *= -1
@@ -118,13 +141,19 @@ def main(c):
 
     log.info("Make submission.")
     submission_df = to_submission_df(predictions_df)
-    submission_df.to_csv("submission.csv")
+    if c.training_params.stage2:
+        submission_df.to_csv("submission_stage2.csv")
+    else:
+        submission_df.to_csv("submission.csv")
 
     if c.settings.is_training:
         validations_df = pd.concat(validations_df)
         predictions_df.loc[:, "sigma"] = 1 / np.sqrt(predictions_df["direction_kappa"])
         predictions_df = pd.merge(predictions_df, validations_df, on=["event_id"])
-        predictions_df.to_csv("results.csv")
+        if c.training_params.stage2:
+            predictions_df.to_csv("results_stage2.csv")
+        else:
+            predictions_df.to_csv("results.csv")
 
     log.info("Done.")
 

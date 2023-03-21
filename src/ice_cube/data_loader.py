@@ -72,7 +72,7 @@ class IceCubeBatchDataset(Dataset):
         return data
 
 
-def make_train_dataloader(c, database_path, selection=None):
+def make_sqlite_dataloader(c, database_path, selection=None):
     train_loader, valid_loader = make_train_validation_dataloader(
         db=database_path,
         selection=selection,  # Entire database
@@ -91,38 +91,21 @@ def make_train_dataloader(c, database_path, selection=None):
     return train_loader, valid_loader
 
 
-def make_test_dataloader(c, database_path, selection=None):
-    dataloader = make_dataloader(
-        db=database_path,
-        selection=selection,  # Entire database: None
-        pulsemaps=c.data.ice_cube.pulse_table,
-        features=FEATURES.KAGGLE,
-        truth=TRUTH.KAGGLE,
-        # labels={"direction": Direction()},
-        batch_size=c.training_params.batch_size,
-        shuffle=False,
-        num_workers=c.training_params.num_workers,
-        index_column=c.settings.index_name,
-        truth_table=c.data.ice_cube.meta_table,
-    )
-
-    return dataloader
-
-
-def make_test_dataloader_batch(
+def make_dataloader_batch(
     c,
     batch_id: int,
     meta_df: pd.DataFrame,
     sensor_df: pd.DataFrame,
     collate_fn: Callable,
     event_ids: Optional[List] = None,
+    is_training: bool = False,
 ):
     dataset = IceCubeBatchDataset(c, batch_id, meta_df, sensor_df, event_ids)
 
     dataloader = DataLoader(
         dataset,
         batch_size=c.training_params.batch_size,
-        shuffle=False,
+        shuffle=is_training,
         num_workers=c.training_params.num_workers,
         collate_fn=collate_fn,
         persistent_workers=True,
