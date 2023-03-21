@@ -14,7 +14,13 @@ class IceCubeBatchDataset(Dataset):
     """1つのbatchをtorchのDatasetとする"""
 
     def __init__(
-        self, c, batch_id: int, meta_df: pd.DataFrame, sensor_df: pd.DataFrame, event_ids: Optional[List] = None
+        self,
+        c,
+        batch_id: int,
+        meta_df: pd.DataFrame,
+        sensor_df: pd.DataFrame,
+        event_ids: Optional[List] = None,
+        batch_df: Optional[pd.DataFrame] = None,
     ):
         super().__init__()
         self.c = c
@@ -26,7 +32,11 @@ class IceCubeBatchDataset(Dataset):
             self.input_batch_dir = c.data.dir.input_train
         else:
             self.input_batch_dir = c.data.dir.input_test
-        self.batch_df = pd.read_parquet(path=f"{self.input_batch_dir}/batch_{batch_id}.parquet").reset_index()
+
+        if batch_df is None:
+            self.batch_df = pd.read_parquet(path=f"{self.input_batch_dir}/batch_{batch_id}.parquet").reset_index()
+        else:
+            self.batch_df = batch_df
 
         if event_ids is None:
             self.event_ids = self.batch_df["event_id"].unique()
@@ -98,9 +108,10 @@ def make_dataloader_batch(
     sensor_df: pd.DataFrame,
     collate_fn: Callable,
     event_ids: Optional[List] = None,
+    batch_df: Optional[pd.DataFrame] = None,
     is_training: bool = False,
 ):
-    dataset = IceCubeBatchDataset(c, batch_id, meta_df, sensor_df, event_ids)
+    dataset = IceCubeBatchDataset(c, batch_id, meta_df, sensor_df, event_ids, batch_df)
 
     dataloader = DataLoader(
         dataset,

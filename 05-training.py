@@ -42,6 +42,14 @@ def main(c):
             range(c.data.ice_cube.train_batch, c.data.ice_cube.train_batch + c.data.ice_cube.train_batch_size)
         )
 
+        if c.settings.is_training:
+            input_batch_dir = c.data.dir.input_train
+        else:
+            input_batch_dir = c.data.dir.input_test
+
+        all_meta_df = None
+        all_batch_df = None
+
         for n, meta_df in enumerate(metadata_iter):
             if c.settings.is_training and n not in train_batch:
                 continue
@@ -52,17 +60,34 @@ def main(c):
             assert len(batch_id) == 1, "contains multiple batch_ids. Did you set the batch_size correctly?"
             log.info(f"Batch {batch_id} ...")
 
-            train_idx, valid_idx = train_test_split(results.index, test_size=0.2)
+            batch_df = pd.read_parquet(path=f"{input_batch_dir}/batch_{batch_id[0]}.parquet").reset_index()
+            batch_df = batch_df[batch_df["event_id"].isin(results.index)]
 
-            train_loader = make_dataloader_batch(
-                c, batch_id[0], meta_df, sensor_df, collate_fn_training, train_idx, is_training=True
-            )
-            valid_loader = make_dataloader_batch(
-                c, batch_id[0], meta_df, sensor_df, collate_fn_training, valid_idx
-            )
-            log.info(f"Train size: {len(train_loader.dataset)}, Valid size: {len(valid_loader.dataset)}")
+            meta_df = meta_df[meta_df["event_id"].isin(results.index)]
 
-            break
+            if all_meta_df is None:
+                all_meta_df = meta_df
+            else:
+                meta_df.loc[:, ["first_pulse_index", "last_pulse_index"]] = meta_df.loc[
+                    :, ["first_pulse_index", "last_pulse_index"]
+                ] + len(all_batch_df)
+                all_meta_df = pd.concat([all_meta_df, meta_df])
+
+            if all_batch_df is None:
+                all_batch_df = batch_df
+            else:
+                all_batch_df = pd.concat([all_batch_df, batch_df])
+
+        train_idx, valid_idx = train_test_split(results.index, test_size=0.2)
+
+        train_loader = make_dataloader_batch(
+            c, -1, all_meta_df, sensor_df, collate_fn_training, train_idx, all_batch_df, is_training=True
+        )
+        valid_loader = make_dataloader_batch(
+            c, -1, all_meta_df, sensor_df, collate_fn_training, valid_idx, all_batch_df
+        )
+        log.info(f"Train size: {len(train_loader.dataset)}, Valid size: {len(valid_loader.dataset)}")
+
     else:
         database_path = os.path.join(c.data.dir.dataset, f"train_{c.data.ice_cube.train_batch}_db.db")
         train_loader, valid_loader = make_sqlite_dataloader(c, database_path)
