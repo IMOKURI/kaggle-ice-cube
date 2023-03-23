@@ -55,6 +55,7 @@ cv_params:
 
 training_params:
   stage2: False
+  linear_regression: False
   epoch: 50
   es_patience: 5
   batch_size: 16
