@@ -12,7 +12,8 @@ log = logging.getLogger(__name__)
 @hydra.main(config_path="config", config_name="main", version_base=None)
 def main(c):
     if c.settings.in_kaggle or not c.settings.is_training:
-        ...
+        log.info("Skip validation.")
+        return
 
     utils.basic_environment_info()
     utils.fix_seed(utils.choice_seed(c))

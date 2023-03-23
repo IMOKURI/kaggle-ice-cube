@@ -75,6 +75,7 @@ def main(c):
         log.info("Predict by default features.")
         results = model.predict(gpus=[0], dataloader=dataloader)
         results_plus_plus = torch.cat(results, dim=1).detach().cpu().numpy()
+        results_plus_plus[:, 0:3] *= np.sqrt(results_plus_plus[:, 3]).reshape(-1, 1)
 
         if c.inference_params.n_ensemble > 1:
             log.info("Predict by features that invert x and y.")
@@ -88,6 +89,7 @@ def main(c):
             results_minus_minus = torch.cat(results, dim=1).detach().cpu().numpy()
             results_minus_minus[:, 0] *= -1
             results_minus_minus[:, 1] *= -1
+            results_minus_minus[:, 0:3] *= np.sqrt(results_minus_minus[:, 3]).reshape(-1, 1)
 
             if c.inference_params.n_ensemble > 2:
                 log.info("Predict by features that invert x.")
@@ -100,6 +102,7 @@ def main(c):
                 results = model.predict(gpus=[0], dataloader=dataloader)
                 results_minus_plus = torch.cat(results, dim=1).detach().cpu().numpy()
                 results_minus_plus[:, 0] *= -1
+                results_minus_plus[:, 0:3] *= np.sqrt(results_minus_plus[:, 3]).reshape(-1, 1)
 
                 log.info("Predict by features that invert y.")
                 if c.training_params.stage2:
@@ -111,6 +114,7 @@ def main(c):
                 results = model.predict(gpus=[0], dataloader=dataloader)
                 results_plus_minus = torch.cat(results, dim=1).detach().cpu().numpy()
                 results_plus_minus[:, 1] *= -1
+                results_plus_minus[:, 0:3] *= np.sqrt(results_plus_minus[:, 3]).reshape(-1, 1)
 
                 log.info("Ensemble 4.")
                 results = (results_plus_plus + results_minus_minus + results_minus_plus + results_plus_minus) / 4.0
