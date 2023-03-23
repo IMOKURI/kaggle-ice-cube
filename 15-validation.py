@@ -5,7 +5,6 @@ import pandas as pd
 
 import src.utils as utils
 from src.ice_cube.scoring import angular_dist_score
-from src.ice_cube.submission import to_submission_df
 
 log = logging.getLogger(__name__)
 
@@ -25,33 +24,30 @@ def main(c):
         results = pd.read_csv("results.csv").set_index("event_id")
         submission_df = pd.read_csv("submission.csv").set_index("event_id")
 
+    assert (results.index == submission_df.index).all()
+
     if c.settings.is_training:
         score = angular_dist_score(
             results["azimuth_y"], results["zenith_y"], submission_df["azimuth"], submission_df["zenith"]
         )
         log.info(f"Base score: {score}")
 
-    submission_low_sigma = to_submission_df(results[results["sigma"] <= 0.5].reset_index())
-    submission_high_sigma = to_submission_df(results[results["sigma"] > 0.5].reset_index())
-    log.info(
-        f"Num of low sigma events: {len(submission_low_sigma)}, Num of high sigma events: {len(submission_high_sigma)}"
-    )
-
     results_low_sigma = results[results["sigma"] <= 0.5]
     results_high_sigma = results[results["sigma"] > 0.5]
+    log.info(f"Num of low sigma events: {len(results_low_sigma)}, Num of high sigma events: {len(results_high_sigma)}")
 
     if c.settings.is_training:
         score_low_sigma = angular_dist_score(
             results_low_sigma["azimuth_y"],
             results_low_sigma["zenith_y"],
-            submission_low_sigma["azimuth"],
-            submission_low_sigma["zenith"],
+            results_low_sigma["azimuth_x"],
+            results_low_sigma["zenith_x"],
         )
         score_high_sigma = angular_dist_score(
             results_high_sigma["azimuth_y"],
             results_high_sigma["zenith_y"],
-            submission_high_sigma["azimuth"],
-            submission_high_sigma["zenith"],
+            results_high_sigma["azimuth_x"],
+            results_high_sigma["zenith_x"],
         )
         log.info(f"Low sigma score: {score_low_sigma}, High sigma score: {score_high_sigma}")
 

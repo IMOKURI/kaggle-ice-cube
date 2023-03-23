@@ -137,7 +137,11 @@ def main(c):
     predictions = np.concatenate(predictions)
 
     predictions_df = pd.DataFrame(event_ids, columns=["event_id"])
-    predictions_df[["direction_x", "direction_y", "direction_z", "direction_kappa"]] = predictions
+    if "direction" in c.model_params.tasks:
+        predictions_df[["direction_x", "direction_y", "direction_z", "direction_kappa"]] = predictions
+    else:
+        predictions_df[["azimuth", "azimuth_kappa", "zenith", "zenith_kappa"]] = predictions
+        predictions_df["direction_kappa"] = (predictions_df["azimuth_kappa"] + predictions_df["zenith_kappa"]) / 2.0
 
     log.info("Make submission.")
     submission_df = to_submission_df(predictions_df)
@@ -149,11 +153,14 @@ def main(c):
     if c.settings.is_training:
         validations_df = pd.concat(validations_df)
         predictions_df.loc[:, "sigma"] = 1 / np.sqrt(predictions_df["direction_kappa"])
-        predictions_df = pd.merge(predictions_df, validations_df, on=["event_id"])
+        predictions_df = pd.merge(predictions_df, validations_df, on=["event_id"]).sort_values("event_id")
         if c.training_params.stage2:
             predictions_df.to_csv("results_stage2.csv")
         else:
             predictions_df.to_csv("results.csv")
+
+    log.info(f"results columns: {predictions_df.columns}")
+    log.info(f"submission columns: {submission_df.columns}")
 
     log.info("Done.")
 

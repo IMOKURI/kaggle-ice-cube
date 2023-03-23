@@ -32,6 +32,7 @@ def main(c):
         log.info("Stage2 training.")
         results = pd.read_parquet("results_low_sigma.parquet")
         # results = pd.read_parquet("results_high_sigma.parquet")
+        log.info(f"Num of data: {len(results)}")
 
         metadata_path = os.path.join(c.data.dir.input, "train_meta.parquet")
         sensor_df = pd.read_csv(os.path.join(c.data.dir.input, "sensor_geometry.csv"))
@@ -61,9 +62,12 @@ def main(c):
             log.info(f"Batch {batch_id} ...")
 
             batch_df = pd.read_parquet(path=f"{input_batch_dir}/batch_{batch_id[0]}.parquet").reset_index()
-            batch_df = batch_df[batch_df["event_id"].isin(results.index)]
+            # ここで必要なデータだけに絞りたいがそうすると pulse_index がずれる。
+            # batch_df = batch_df[batch_df["event_id"].isin(results.index)]
 
             meta_df = meta_df[meta_df["event_id"].isin(results.index)]
+
+            log.info(f"Meta size: {len(meta_df)}, Batch size: {len(batch_df)}")
 
             if all_meta_df is None:
                 all_meta_df = meta_df
@@ -112,7 +116,7 @@ def main(c):
     )
 
     model.save_state_dict(os.path.join(run_dir, "state_dict.pth"))
-    model.save(os.path.join(run_dir, "model.pth"))
+    # model.save(os.path.join(run_dir, "model.pth"))
 
     log.info("Done.")
 

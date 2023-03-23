@@ -23,6 +23,7 @@ def main(c):
 
     results.loc[results_stage2.index, :] = (results[results.index.isin(results_stage2.index)] + results_stage2) / 2.0
     submission_df = to_submission_df(results.reset_index())
+    # TODO: submission to_csv
 
     if c.settings.is_training:
         score = angular_dist_score(
@@ -30,27 +31,22 @@ def main(c):
         )
         log.info(f"Base score: {score}")
 
-    submission_low_sigma = to_submission_df(results[results["sigma"] <= 0.5].reset_index())
-    submission_high_sigma = to_submission_df(results[results["sigma"] > 0.5].reset_index())
-    log.info(
-        f"Num of low sigma events: {len(submission_low_sigma)}, Num of high sigma events: {len(submission_high_sigma)}"
-    )
-
     results_low_sigma = results[results["sigma"] <= 0.5]
     results_high_sigma = results[results["sigma"] > 0.5]
+    log.info(f"Num of low sigma events: {len(results_low_sigma)}, Num of high sigma events: {len(results_high_sigma)}")
 
     if c.settings.is_training:
         score_low_sigma = angular_dist_score(
             results_low_sigma["azimuth_y"],
             results_low_sigma["zenith_y"],
-            submission_low_sigma["azimuth"],
-            submission_low_sigma["zenith"],
+            results_low_sigma["azimuth_x"],
+            results_low_sigma["zenith_x"],
         )
         score_high_sigma = angular_dist_score(
             results_high_sigma["azimuth_y"],
             results_high_sigma["zenith_y"],
-            submission_high_sigma["azimuth"],
-            submission_high_sigma["zenith"],
+            results_high_sigma["azimuth_x"],
+            results_high_sigma["zenith_x"],
         )
         log.info(f"Low sigma score: {score_low_sigma}, High sigma score: {score_high_sigma}")
 
