@@ -185,3 +185,27 @@ def collate_fn_minus_plus(graphs: List[Data]) -> Batch:
             batch.append(data)
 
     return Batch.from_data_list(batch)
+
+
+def collate_fn_plus_plus_minus(graphs: List[Data]) -> Batch:
+    batch = []
+    for data in graphs:
+        data = downsample_pulse(data)
+        data.x = torch.mul(data.x, torch.FloatTensor([1, 1, -1, 1, 1, 1]))
+
+        if data.n_pulses > 1:
+            batch.append(data)
+
+    return Batch.from_data_list(batch)
+
+
+def collate_fn_minus_minus_minus(graphs: List[Data]) -> Batch:
+    batch = []
+    for data in graphs:
+        data = downsample_pulse(data)
+        data.x = torch.mul(data.x, torch.FloatTensor([-1, -1, -1, 1, 1, 1]))
+
+        if data.n_pulses > 1:
+            batch.append(data)
+
+    return Batch.from_data_list(batch)

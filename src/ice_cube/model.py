@@ -11,11 +11,10 @@ from graphnet.models.task.reconstruction import (
     ZenithReconstructionWithKappa,
 )
 from graphnet.training.callbacks import PiecewiseLinearLR
-from graphnet.training.loss_functions import VonMisesFisher2DLoss
+from graphnet.training.loss_functions import VonMisesFisher2DLoss, VonMisesFisher3DLoss
 from torch.optim.adam import Adam
 
 from .dynedge import DynEdge
-from .loss import VonMisesFisher3DLoss
 
 log = logging.getLogger(__name__)
 

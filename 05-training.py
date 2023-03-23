@@ -11,7 +11,7 @@ from sklearn.model_selection import train_test_split
 
 import src.utils as utils
 from src.ice_cube.data_loader import collate_fn_training, make_dataloader_batch, make_sqlite_dataloader
-from src.ice_cube.model import build_model
+from src.ice_cube.model import build_model, load_pretrained_model
 
 log = logging.getLogger(__name__)
 
@@ -96,7 +96,8 @@ def main(c):
         database_path = os.path.join(c.data.dir.dataset, f"train_{c.data.ice_cube.train_batch}_db.db")
         train_loader, valid_loader = make_sqlite_dataloader(c, database_path)
 
-    model = build_model(c, train_loader)
+    # model = build_model(c, train_loader)
+    model = load_pretrained_model(c, train_loader, state_dict_path=c.inference_params.model_path)
 
     callbacks = [
         EarlyStopping(

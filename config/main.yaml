@@ -82,5 +82,6 @@ model_params:
     # - zenith
 
 inference_params:
+  n_ensemble: 2
   model_path: "dynedge-pretrained/dynedge_pretrained_batch_1_to_50/state_dict.pth"
   model_path_low: "dynedge-pretrained/dynedge_pretrained_batch_1_to_50/state_dict.pth"

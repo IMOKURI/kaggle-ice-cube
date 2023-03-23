@@ -15,8 +15,10 @@ import src.utils as utils
 from src.ice_cube.data_loader import (
     collate_fn,
     collate_fn_minus_minus,
+    collate_fn_minus_minus_minus,
     collate_fn_minus_plus,
     collate_fn_plus_minus,
+    collate_fn_plus_plus_minus,
     make_dataloader_batch,
 )
 from src.ice_cube.model import load_pretrained_model
@@ -36,7 +38,7 @@ def main(c):
 
     if c.training_params.stage2:
         log.info("Stage2 inference.")
-        results_stage1 = pd.read_parquet("results_low_sigma.parquet")
+        results_stage1 = pd.read_parquet("results_high_sigma.parquet")
 
     if c.settings.is_training:
         metadata_path = os.path.join(c.data.dir.input, "train_meta.parquet")
@@ -67,6 +69,9 @@ def main(c):
 
         if c.training_params.stage2:
             dataloader = make_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn, results_stage1.index)
+            # dataloader = make_dataloader_batch(
+            #     c, batch_id[0], meta_df, sensor_df, collate_fn_plus_plus_minus, results_stage1.index
+            # )
             model = load_pretrained_model(c, dataloader, state_dict_path=c.inference_params.model_path_low)
         else:
             dataloader = make_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn)
@@ -75,26 +80,28 @@ def main(c):
         log.info("Predict by default features.")
         results = model.predict(gpus=[0], dataloader=dataloader)
         results_plus_plus = torch.cat(results, dim=1).detach().cpu().numpy()
+        # if c.training_params.stage2:
+        #     results_plus_plus[:, 2] *= -1
 
-        if c.settings.is_training:
-            n_ensemble = 2
-        else:
-            n_ensemble = 4
-
-        if n_ensemble > 1:
+        if c.inference_params.n_ensemble > 1:
             log.info("Predict by features that invert x and y.")
             if c.training_params.stage2:
                 dataloader = make_dataloader_batch(
                     c, batch_id[0], meta_df, sensor_df, collate_fn_minus_minus, results_stage1.index
                 )
+                # dataloader = make_dataloader_batch(
+                #     c, batch_id[0], meta_df, sensor_df, collate_fn_minus_minus_minus, results_stage1.index
+                # )
             else:
                 dataloader = make_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn_minus_minus)
             results = model.predict(gpus=[0], dataloader=dataloader)
             results_minus_minus = torch.cat(results, dim=1).detach().cpu().numpy()
             results_minus_minus[:, 0] *= -1
             results_minus_minus[:, 1] *= -1
+            # if c.training_params.stage2:
+            #     results_minus_minus[:, 2] *= -1
 
-            if n_ensemble > 2:
+            if c.inference_params.n_ensemble > 2:
                 log.info("Predict by features that invert x.")
                 if c.training_params.stage2:
                     dataloader = make_dataloader_batch(
