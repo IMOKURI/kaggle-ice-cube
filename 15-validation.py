@@ -22,10 +22,6 @@ def main(c):
         log.info("Validation stage 2.")
         results = pd.read_csv("results_stage2.csv").set_index("event_id")
         submission_df = pd.read_csv("submission_stage2.csv").set_index("event_id")
-    elif c.training_params.linear_regression:
-        log.info("Validation linear regression.")
-        results = pd.read_csv("results_linear_regression.csv").set_index("event_id")
-        submission_df = pd.read_csv("submission_linear_regression.csv").set_index("event_id")
     else:
         log.info("Validation stage 1.")
         results = pd.read_csv("results.csv").set_index("event_id")
@@ -38,10 +34,6 @@ def main(c):
             results["azimuth_y"], results["zenith_y"], submission_df["azimuth"], submission_df["zenith"]
         )
         log.info(f"Base score: {score}")
-
-    if c.training_params.linear_regression:
-        log.info("Done.")
-        return
 
     results_low_sigma = results[results["sigma"] <= 0.5]
     results_high_sigma = results[results["sigma"] > 0.5]
