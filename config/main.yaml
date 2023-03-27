@@ -57,7 +57,7 @@ training_params:
   stage2: False
   epoch: 50
   es_patience: 5
-  batch_size: 16
+  batch_size: 512
   num_workers: 4
   # gradient_acc_step: 1
   # max_grad_norm: 1000
