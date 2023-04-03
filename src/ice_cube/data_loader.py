@@ -10,6 +10,8 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset
 from torch_geometric.data import Batch, Data
 
+ICECUBE_FEATURES = FEATURES.KAGGLE + ["sensor_ratio"]
+
 
 class IceCubeBatchDataset(Dataset):
     """1つのbatchをtorchのDatasetとする"""
@@ -47,7 +49,7 @@ class IceCubeBatchDataset(Dataset):
         self._preprocess()
 
     def _preprocess(self):
-        self.batch_df = pd.merge(self.batch_df, self.sensor_df, on="sensor_id").sort_values("event_id")
+        # self.batch_df = pd.merge(self.batch_df, self.sensor_df, on="sensor_id").sort_values("event_id")
         self.batch_df["auxiliary"] = self.batch_df["auxiliary"].replace({True: 1, False: 0})
 
     def __len__(self):
@@ -58,9 +60,11 @@ class IceCubeBatchDataset(Dataset):
         first_index = self.meta_df[self.meta_df["event_id"] == event_id]["first_pulse_index"].to_numpy()[0]
         last_index = self.meta_df[self.meta_df["event_id"] == event_id]["last_pulse_index"].to_numpy()[0]
         event = self.batch_df.iloc[first_index:last_index, :]
-        # assert len(pd.unique(event["event_id"])) == 1
+        assert len(pd.unique(event["event_id"])) == 1
 
-        x = event[FEATURES.KAGGLE].to_numpy()
+        features = FEATURES.KAGGLE
+
+        x = event[features].to_numpy()
         x = torch.tensor(x, dtype=torch.float32)
 
         if self.c.settings.is_training:
@@ -70,7 +74,7 @@ class IceCubeBatchDataset(Dataset):
             data = Data(
                 x=x,
                 n_pulses=torch.tensor(x.shape[0], dtype=torch.int32),
-                features=FEATURES.KAGGLE,
+                features=features,
                 azimuth=torch.tensor(azimuth, dtype=torch.float32),
                 zenith=torch.tensor(zenith, dtype=torch.float32),
             )
@@ -78,7 +82,7 @@ class IceCubeBatchDataset(Dataset):
             data = Data(
                 x=x,
                 n_pulses=torch.tensor(x.shape[0], dtype=torch.int32),
-                features=FEATURES.KAGGLE,
+                features=features,
             )
         return data
 

@@ -2,9 +2,12 @@ import logging
 import os
 from typing import Any
 
+import torch
+from graphnet.data.constants import FEATURES
 from graphnet.models import StandardModel
-from graphnet.models.detector.icecube import IceCubeKaggle
+from graphnet.models.detector.detector import Detector
 from graphnet.models.graph_builders import KNNGraphBuilder
+from graphnet.models.detector.icecube import IceCubeKaggle
 from graphnet.models.task.reconstruction import (
     AzimuthReconstructionWithKappa,
     DirectionReconstructionWithKappa,
@@ -13,22 +16,58 @@ from graphnet.models.task.reconstruction import (
 from graphnet.training.callbacks import PiecewiseLinearLR
 from graphnet.training.loss_functions import VonMisesFisher2DLoss, VonMisesFisher3DLoss
 from torch.optim.adam import Adam
+from torch_geometric.data import Data
 
 from .dynedge import DynEdge
+
+ICECUBE_FEATURES = FEATURES.KAGGLE + ["sensor_ratio"]
 
 log = logging.getLogger(__name__)
 
 
-def build_model(c, dataloader: Any, custom_aggregation: bool = False) -> StandardModel:
+class IceCubeDetector(Detector):
+    """`Detector` class for Kaggle Competition."""
+
+    # Implementing abstract class attribute
+    # features = ICECUBE_FEATURES
+    features = FEATURES.KAGGLE
+
+    def _forward(self, data: Data) -> Data:
+        """Ingest data, build graph, and preprocess features.
+
+        Args:
+            data: Input graph data.
+
+        Returns:
+            Connected and preprocessed graph data.
+        """
+        # Check(s)
+        self._validate_features(data)
+
+        # Preprocessing
+        # data.x[:, 0] /= 500.0  # x
+        # data.x[:, 1] /= 500.0  # y
+        # data.x[:, 2] /= 500.0  # z
+        # data.x[:, 3] = (data.x[:, 3] - 1.0e04) / 3.0e4  # time
+        # data.x[:, 4] = torch.log10(data.x[:, 4]) / 3.0  # charge
+
+        return data
+
+
+def build_model(c, dataloader: Any) -> StandardModel:
     """Builds GNN from config"""
-    # Building model
-    detector = IceCubeKaggle(
-        graph_builder=KNNGraphBuilder(nb_nearest_neighbours=8),
-    )
+    if c.model_params.detector == "custom":
+        detector = IceCubeDetector(
+            graph_builder=KNNGraphBuilder(nb_nearest_neighbours=8),
+        )
+    else:
+        detector = IceCubeKaggle(
+            graph_builder=KNNGraphBuilder(nb_nearest_neighbours=8),
+        )
     gnn = DynEdge(
         nb_inputs=detector.nb_outputs,
         global_pooling_schemes=["min", "max", "mean", "dummy"],
-        custom_aggregation=custom_aggregation,
+        custom_aggregation=c.model_params.aggregation_custom,
     )
 
     tasks = []
@@ -112,8 +151,8 @@ def build_model(c, dataloader: Any, custom_aggregation: bool = False) -> Standar
     return model
 
 
-def load_pretrained_model(c, dataloader, state_dict_path, custom_aggregation: bool = False) -> StandardModel:
-    model = build_model(c, dataloader=dataloader, custom_aggregation=custom_aggregation)
+def load_pretrained_model(c, dataloader, state_dict_path) -> StandardModel:
+    model = build_model(c, dataloader=dataloader)
     # model._inference_trainer = Trainer(config['fit'])
     model.load_state_dict(os.path.join(c.data.dir.pretrained, state_dict_path))
     log.info(f"Load model from: {state_dict_path}")

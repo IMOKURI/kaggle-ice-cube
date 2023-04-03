@@ -6,17 +6,26 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 
+from .preprocesses.cache import transform_data
+from .preprocesses.p001_dist_transformer import DistTransformer
+
 log = logging.getLogger(__name__)
 
 
 def preprocess(c, df: pd.DataFrame, stem: str) -> pd.DataFrame:
     # Convert None to NaN
-    df = df.fillna(np.nan)
+    # df = df.fillna(np.nan)
 
-    ...
+    pp = DistTransformer(transform="min-max", verbose=True)
+    df.loc[:, ["x", "y", "z", "time"]] = transform_data(
+        c, "preprocess_minmax.pickle", df.loc[:, ["x", "y", "z", "time"]], pp
+    )
+
+    pp = DistTransformer(transform="yeo-johnson", verbose=True)
+    df.loc[:, ["charge"]] = transform_data(c, "preprocess_power.pickle", df.loc[:, ["charge"]], pp)
 
     # Convert None to NaN
-    df = df.fillna(np.nan)
+    # df = df.fillna(np.nan)
 
     return df
 

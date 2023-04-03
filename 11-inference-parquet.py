@@ -21,6 +21,7 @@ from src.ice_cube.data_loader import (
 )
 from src.ice_cube.model import load_pretrained_model
 from src.ice_cube.submission import to_submission_df
+from src.preprocess import preprocess
 
 log = logging.getLogger(__name__)
 
@@ -45,6 +46,15 @@ def main(c):
 
     sensor_df = pd.read_csv(os.path.join(c.data.dir.input, "sensor_geometry.csv"))
 
+    # sensor_df["string_id"] = sensor_df["sensor_id"] // 60
+    # sensor_df["depth_id"] = sensor_df["sensor_id"] % 60
+    # # sensor_df.loc[sensor_df["string_id"] < 78, "sensor_ratio"] = 0  # main sensor
+    # # sensor_df.loc[(sensor_df["string_id"] >= 78) & (sensor_df["depth_id"] < 10), "sensor_ratio"] = 1  # Veto
+    # sensor_df.loc[(sensor_df["string_id"] >= 78) & (sensor_df["depth_id"] >= 10), "sensor_ratio"] = 1.35  # DeepCore
+    # sensor_df.loc[(sensor_df["z"] >= -155) & (sensor_df["z"] <= 0), "sensor_ratio"] = 0.6  # Dust layer
+    # sensor_df.loc[sensor_df["z"] < -155, "sensor_ratio"] = 1.05  # Second best QE
+    # sensor_df.loc[sensor_df["z"] > 0, "sensor_ratio"] = 0.9  # third best QE
+
     batch_size = 200_000
     metadata_iter = pq.ParquetFile(metadata_path).iter_batches(batch_size=batch_size)
 
@@ -67,7 +77,7 @@ def main(c):
 
         if c.training_params.stage2:
             dataloader = make_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn, results_stage1.index)
-            model = load_pretrained_model(c, dataloader, state_dict_path=c.inference_params.model_path_low)
+            model = load_pretrained_model(c, dataloader, state_dict_path=c.inference_params.model_path_stage2)
         else:
             dataloader = make_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn)
             model = load_pretrained_model(c, dataloader, state_dict_path=c.inference_params.model_path)

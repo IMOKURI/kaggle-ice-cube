@@ -55,9 +55,9 @@ cv_params:
 
 training_params:
   stage2: False
-  epoch: 50
-  es_patience: 5
-  batch_size: 512
+  epoch: 100
+  es_patience: 10
+  batch_size: 32
   num_workers: 4
   # gradient_acc_step: 1
   # max_grad_norm: 1000
@@ -76,6 +76,8 @@ model_params:
   target: direction
   # model: default
   # model_name: default
+  detector: default  # default, custom
+  aggregation_custom: False
   tasks:
     - direction
     # - azimuth
@@ -84,4 +86,4 @@ model_params:
 inference_params:
   n_ensemble: 4
   model_path: "dynedge-pretrained/dynedge_pretrained_batch_1_to_50/state_dict.pth"
-  model_path_low: "dynedge-pretrained/dynedge_pretrained_batch_1_to_50/state_dict.pth"
+  model_path_stage2: "dynedge-pretrained/dynedge_pretrained_batch_1_to_50/state_dict.pth"

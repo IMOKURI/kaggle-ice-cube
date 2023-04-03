@@ -72,7 +72,7 @@ class DistTransformer(BaseTransformer):
         }
     """
 
-    def __init__(self, transform="standard", verbose=False):
+    def __init__(self, transform="standard", verbose=True):
         self.t = transform
         self.transformers = {}
         self.verbose = verbose

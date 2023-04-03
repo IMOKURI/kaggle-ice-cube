@@ -12,6 +12,7 @@ from sklearn.model_selection import train_test_split
 import src.utils as utils
 from src.ice_cube.data_loader import collate_fn_training, make_dataloader_batch, make_sqlite_dataloader
 from src.ice_cube.model import build_model, load_pretrained_model
+from src.preprocess import preprocess
 
 log = logging.getLogger(__name__)
 
@@ -28,14 +29,27 @@ def main(c):
     run_dir = HydraConfig.get().run.dir
     log.info(f"Run dir: {run_dir}")
 
+    c.training_params.batch_size = 512
+
     if c.training_params.stage2:
         log.info("Stage2 training.")
-        results = pd.read_parquet("results_low_sigma.parquet")
+        # results = pd.read_csv("results.csv").set_index("event_id")
+        # results = pd.read_parquet("results_low_sigma.parquet")
         # results = pd.read_parquet("results_high_sigma.parquet")
-        log.info(f"Num of data: {len(results)}")
+        # log.info(f"Num of data: {len(results)}")
 
         metadata_path = os.path.join(c.data.dir.input, "train_meta.parquet")
         sensor_df = pd.read_csv(os.path.join(c.data.dir.input, "sensor_geometry.csv"))
+
+        # sensor_df["string_id"] = sensor_df["sensor_id"] // 60
+        # sensor_df["depth_id"] = sensor_df["sensor_id"] % 60
+        # # sensor_df.loc[sensor_df["string_id"] < 78, "sensor_ratio"] = 0  # main sensor
+        # # sensor_df.loc[(sensor_df["string_id"] >= 78) & (sensor_df["depth_id"] < 10), "sensor_ratio"] = 1  # Veto
+        # sensor_df.loc[(sensor_df["string_id"] >= 78) & (sensor_df["depth_id"] >= 10), "sensor_ratio"] = 1.35  # DeepCore
+        # sensor_df.loc[(sensor_df["z"] >= -155) & (sensor_df["z"] <= 0), "sensor_ratio"] = 0.6  # Dust layer
+        # sensor_df.loc[sensor_df["z"] < -155, "sensor_ratio"] = 1.05  # Second best QE
+        # sensor_df.loc[sensor_df["z"] > 0, "sensor_ratio"] = 0.9  # third best QE
+
         batch_size = 200_000
         metadata_iter = pq.ParquetFile(metadata_path).iter_batches(batch_size=batch_size)
 
@@ -65,7 +79,7 @@ def main(c):
             # ここで必要なデータだけに絞りたいがそうすると pulse_index がずれる。
             # batch_df = batch_df[batch_df["event_id"].isin(results.index)]
 
-            meta_df = meta_df[meta_df["event_id"].isin(results.index)]
+            # meta_df = meta_df[meta_df["event_id"].isin(results.index)]
 
             log.info(f"Meta size: {len(meta_df)}, Batch size: {len(batch_df)}")
 
@@ -82,7 +96,15 @@ def main(c):
             else:
                 all_batch_df = pd.concat([all_batch_df, batch_df])
 
-        train_idx, valid_idx = train_test_split(results.index, test_size=0.2)
+        assert all_meta_df is not None
+
+        all_batch_df = pd.merge(all_batch_df, sensor_df, on="sensor_id").sort_values("event_id")
+
+        if c.model_params.detector == "custom":
+            all_batch_df = preprocess(c, all_batch_df, "batch")
+
+        # train_idx, valid_idx = train_test_split(results.index, test_size=0.2)
+        train_idx, valid_idx = train_test_split(all_meta_df["event_id"], test_size=0.2)
 
         train_loader = make_dataloader_batch(
             c, -1, all_meta_df, sensor_df, collate_fn_training, train_idx, all_batch_df, is_training=True
@@ -96,8 +118,8 @@ def main(c):
         database_path = os.path.join(c.data.dir.dataset, f"train_{c.data.ice_cube.train_batch}_db.db")
         train_loader, valid_loader = make_sqlite_dataloader(c, database_path)
 
-    # model = build_model(c, train_loader)
-    model = load_pretrained_model(c, train_loader, state_dict_path=c.inference_params.model_path)
+    model = build_model(c, train_loader)
+    # model = load_pretrained_model(c, train_loader, state_dict_path=c.inference_params.model_path)
 
     callbacks = [
         EarlyStopping(
