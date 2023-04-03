@@ -70,6 +70,7 @@ def main(c):
 
         batch_df = pd.read_parquet(path=f"{input_batch_dir}/batch_{batch_id[0]}.parquet").reset_index()
         batch_df = pd.merge(batch_df, sensor_df, on="sensor_id").sort_values("event_id")
+        batch_df = preprocess(c, batch_df, "batch")
 
         if c.training_params.stage2:
             dataloader = make_dataloader_batch(c, meta_df, batch_df, collate_fn, results_stage1.index)

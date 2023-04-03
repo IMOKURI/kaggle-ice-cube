@@ -77,13 +77,12 @@ model_params:
   # model: default
   # model_name: default
   detector: default  # default, custom
-  aggregation_custom: False
   tasks:
     - direction
     # - azimuth
     # - zenith
 
 inference_params:
-  n_ensemble: 4
+  n_ensemble: 2
   model_path: "dynedge-pretrained/dynedge_pretrained_batch_1_to_50/state_dict.pth"
   model_path_stage2: "dynedge-pretrained/dynedge_pretrained_batch_1_to_50/state_dict.pth"

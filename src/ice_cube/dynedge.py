@@ -36,7 +36,6 @@ class DynEdge(GNN):
         readout_layer_sizes: Optional[List[int]] = None,
         global_pooling_schemes: Optional[Union[str, List[str]]] = None,
         add_global_variables_after_pooling: bool = False,
-        custom_aggregation: Optional[bool] = False,
     ):
         """Construct `DynEdge`.
 
@@ -157,8 +156,6 @@ class DynEdge(GNN):
         self._nb_neighbours = nb_neighbours
         self._features_subset = features_subset
 
-        self.custom_aggregation = custom_aggregation
-
         self._construct_layers()
 
     def _construct_layers(self) -> None:
@@ -200,21 +197,12 @@ class DynEdge(GNN):
 
         self._post_processing = torch.nn.Sequential(*post_processing_layers)
 
-        if self.custom_aggregation:
-            self.aggr_min = aggr.MinAggregation()
-            self.aggr_max = aggr.MaxAggregation()
-            self.aggr_mean = aggr.MeanAggregation()
-            self.aggr_var = aggr.VarAggregation()
-
         # Read-out operations
-        if self.custom_aggregation:
-            nb_poolings = len(self._global_pooling_schemes) if self._global_pooling_schemes else 1
-        else:
-            nb_poolings = (
-                len(list(filter(lambda x: x != "dummy", self._global_pooling_schemes)))
-                if self._global_pooling_schemes
-                else 1
-            )
+        nb_poolings = (
+            len(list(filter(lambda x: x != "dummy", self._global_pooling_schemes)))
+            if self._global_pooling_schemes
+            else 1
+        )
 
         nb_latent_features = nb_out * nb_poolings
         if self._add_global_variables_after_pooling:
@@ -311,15 +299,7 @@ class DynEdge(GNN):
 
         # (Optional) Global pooling
         if self._global_pooling_schemes:
-            if self.custom_aggregation:
-                x_min = self.aggr_min(x, index=batch, dim=0)
-                x_max = self.aggr_max(x, index=batch, dim=0)
-                x_mean = self.aggr_mean(x, index=batch, dim=0)
-                x_var = self.aggr_var(x, index=batch, dim=0)
-                x = torch.cat((x_min, x_max, x_mean, x_var), dim=1)
-            else:
-                x = self._global_pooling(x, batch=batch)
-
+            x = self._global_pooling(x, batch=batch)
             if self._add_global_variables_after_pooling:
                 x = torch.cat(
                     [

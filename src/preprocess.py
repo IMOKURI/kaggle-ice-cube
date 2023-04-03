@@ -16,13 +16,14 @@ def preprocess(c, df: pd.DataFrame, stem: str) -> pd.DataFrame:
     # Convert None to NaN
     # df = df.fillna(np.nan)
 
-    pp = DistTransformer(transform="min-max", verbose=True)
-    df.loc[:, ["x", "y", "z", "time"]] = transform_data(
-        c, "preprocess_minmax.pickle", df.loc[:, ["x", "y", "z", "time"]], pp
-    )
+    if c.model_params.detector == "custom":
+        pp = DistTransformer(transform="min-max", verbose=True)
+        df.loc[:, ["x", "y", "z", "time"]] = pp.fit_transform(df.loc[:, ["x", "y", "z", "time"]])
 
-    pp = DistTransformer(transform="yeo-johnson", verbose=True)
-    df.loc[:, ["charge"]] = transform_data(c, "preprocess_power.pickle", df.loc[:, ["charge"]], pp)
+        pp = DistTransformer(transform="yeo-johnson", verbose=True)
+        df.loc[:, ["charge"]] = pp.fit_transform(df.loc[:, ["charge"]])
+
+    df.loc[:, ["auxiliary"]] = df["auxiliary"].replace({True: 1, False: 0})
 
     # Convert None to NaN
     # df = df.fillna(np.nan)

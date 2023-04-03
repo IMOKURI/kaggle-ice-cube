@@ -33,11 +33,6 @@ class IceCubeBatchDataset(Dataset):
         else:
             self.event_ids = list(set(self.batch_df["event_id"].unique()) & set(event_ids))
 
-        self._preprocess()
-
-    def _preprocess(self):
-        self.batch_df["auxiliary"] = self.batch_df["auxiliary"].replace({True: 1, False: 0})
-
     def __len__(self):
         return len(self.event_ids)
 
@@ -249,8 +244,8 @@ def downsample_pulse(data: Data) -> Data:
 
 
 def collate_fn(graphs: List[Data]):
-    graphs = [downsample_pulse(g) for g in graphs if g.n_pulses > 1]
-    # graphs = [g for g in graphs if g.n_pulses > 1]
+    # graphs = [downsample_pulse(g) for g in graphs if g.n_pulses > 1]
+    graphs = [g for g in graphs if g.n_pulses > 1]
     return Batch.from_data_list(graphs)
 
 
@@ -269,7 +264,7 @@ def collate_fn_training(graphs: List[Data]):
 def collate_fn_minus_minus(graphs: List[Data]):
     batch = []
     for data in graphs:
-        data = downsample_pulse(data)
+        # data = downsample_pulse(data)
         data.x = torch.mul(data.x, torch.FloatTensor([-1, -1, 1, 1, 1, 1]))
 
         if data.n_pulses > 1:
@@ -281,7 +276,7 @@ def collate_fn_minus_minus(graphs: List[Data]):
 def collate_fn_plus_minus(graphs: List[Data]):
     batch = []
     for data in graphs:
-        data = downsample_pulse(data)
+        # data = downsample_pulse(data)
         data.x = torch.mul(data.x, torch.FloatTensor([1, -1, 1, 1, 1, 1]))
 
         if data.n_pulses > 1:
@@ -293,7 +288,7 @@ def collate_fn_plus_minus(graphs: List[Data]):
 def collate_fn_minus_plus(graphs: List[Data]):
     batch = []
     for data in graphs:
-        data = downsample_pulse(data)
+        # data = downsample_pulse(data)
         data.x = torch.mul(data.x, torch.FloatTensor([-1, 1, 1, 1, 1, 1]))
 
         if data.n_pulses > 1:

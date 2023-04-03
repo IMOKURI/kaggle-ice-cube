@@ -67,7 +67,6 @@ def build_model(c, dataloader: Any) -> StandardModel:
     gnn = DynEdge(
         nb_inputs=detector.nb_outputs,
         global_pooling_schemes=["min", "max", "mean", "dummy"],
-        custom_aggregation=c.model_params.aggregation_custom,
     )
 
     tasks = []

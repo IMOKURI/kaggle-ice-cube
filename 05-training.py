@@ -90,9 +90,7 @@ def main(c):
         assert all_meta_df is not None
 
         all_batch_df = pd.merge(all_batch_df, sensor_df, on="sensor_id").sort_values("event_id")
-
-        if c.model_params.detector == "custom":
-            all_batch_df = preprocess(c, all_batch_df, "batch")
+        all_batch_df = preprocess(c, all_batch_df, "batch")
 
         # train_idx, valid_idx = train_test_split(results.index, test_size=0.2)
         train_idx, valid_idx = train_test_split(all_meta_df["event_id"], test_size=0.2)
