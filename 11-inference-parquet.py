@@ -41,19 +41,12 @@ def main(c):
 
     if c.settings.is_training:
         metadata_path = os.path.join(c.data.dir.input, "train_meta.parquet")
+        input_batch_dir = c.data.dir.input_train
     else:
         metadata_path = os.path.join(c.data.dir.input, "test_meta.parquet")
+        input_batch_dir = c.data.dir.input_test
 
     sensor_df = pd.read_csv(os.path.join(c.data.dir.input, "sensor_geometry.csv"))
-
-    # sensor_df["string_id"] = sensor_df["sensor_id"] // 60
-    # sensor_df["depth_id"] = sensor_df["sensor_id"] % 60
-    # # sensor_df.loc[sensor_df["string_id"] < 78, "sensor_ratio"] = 0  # main sensor
-    # # sensor_df.loc[(sensor_df["string_id"] >= 78) & (sensor_df["depth_id"] < 10), "sensor_ratio"] = 1  # Veto
-    # sensor_df.loc[(sensor_df["string_id"] >= 78) & (sensor_df["depth_id"] >= 10), "sensor_ratio"] = 1.35  # DeepCore
-    # sensor_df.loc[(sensor_df["z"] >= -155) & (sensor_df["z"] <= 0), "sensor_ratio"] = 0.6  # Dust layer
-    # sensor_df.loc[sensor_df["z"] < -155, "sensor_ratio"] = 1.05  # Second best QE
-    # sensor_df.loc[sensor_df["z"] > 0, "sensor_ratio"] = 0.9  # third best QE
 
     batch_size = 200_000
     metadata_iter = pq.ParquetFile(metadata_path).iter_batches(batch_size=batch_size)
@@ -75,11 +68,14 @@ def main(c):
         assert len(batch_id) == 1, "contains multiple batch_ids. Did you set the batch_size correctly?"
         log.info(f"Batch {batch_id} ...")
 
+        batch_df = pd.read_parquet(path=f"{input_batch_dir}/batch_{batch_id[0]}.parquet").reset_index()
+        batch_df = pd.merge(batch_df, sensor_df, on="sensor_id").sort_values("event_id")
+
         if c.training_params.stage2:
-            dataloader = make_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn, results_stage1.index)
+            dataloader = make_dataloader_batch(c, meta_df, batch_df, collate_fn, results_stage1.index)
             model = load_pretrained_model(c, dataloader, state_dict_path=c.inference_params.model_path_stage2)
         else:
-            dataloader = make_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn)
+            dataloader = make_dataloader_batch(c, meta_df, batch_df, collate_fn)
             model = load_pretrained_model(c, dataloader, state_dict_path=c.inference_params.model_path)
 
         log.info("Predict by default features.")
@@ -90,11 +86,9 @@ def main(c):
         if c.inference_params.n_ensemble > 1:
             log.info("Predict by features that invert x and y.")
             if c.training_params.stage2:
-                dataloader = make_dataloader_batch(
-                    c, batch_id[0], meta_df, sensor_df, collate_fn_minus_minus, results_stage1.index
-                )
+                dataloader = make_dataloader_batch(c, meta_df, batch_df, collate_fn_minus_minus, results_stage1.index)
             else:
-                dataloader = make_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn_minus_minus)
+                dataloader = make_dataloader_batch(c, meta_df, batch_df, collate_fn_minus_minus)
             results = model.predict(gpus=[0], dataloader=dataloader)
             results_minus_minus = torch.cat(results, dim=1).detach().cpu().numpy()
             results_minus_minus[:, 0] *= -1
@@ -105,10 +99,10 @@ def main(c):
                 log.info("Predict by features that invert x.")
                 if c.training_params.stage2:
                     dataloader = make_dataloader_batch(
-                        c, batch_id[0], meta_df, sensor_df, collate_fn_minus_plus, results_stage1.index
+                        c, meta_df, batch_df, collate_fn_minus_plus, results_stage1.index
                     )
                 else:
-                    dataloader = make_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn_minus_plus)
+                    dataloader = make_dataloader_batch(c, meta_df, batch_df, collate_fn_minus_plus)
                 results = model.predict(gpus=[0], dataloader=dataloader)
                 results_minus_plus = torch.cat(results, dim=1).detach().cpu().numpy()
                 results_minus_plus[:, 0] *= -1
@@ -117,10 +111,10 @@ def main(c):
                 log.info("Predict by features that invert y.")
                 if c.training_params.stage2:
                     dataloader = make_dataloader_batch(
-                        c, batch_id[0], meta_df, sensor_df, collate_fn_plus_minus, results_stage1.index
+                        c, meta_df, batch_df, collate_fn_plus_minus, results_stage1.index
                     )
                 else:
-                    dataloader = make_dataloader_batch(c, batch_id[0], meta_df, sensor_df, collate_fn_plus_minus)
+                    dataloader = make_dataloader_batch(c, meta_df, batch_df, collate_fn_plus_minus)
                 results = model.predict(gpus=[0], dataloader=dataloader)
                 results_plus_minus = torch.cat(results, dim=1).detach().cpu().numpy()
                 results_plus_minus[:, 1] *= -1

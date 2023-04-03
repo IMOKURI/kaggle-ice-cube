@@ -41,15 +41,6 @@ def main(c):
         metadata_path = os.path.join(c.data.dir.input, "train_meta.parquet")
         sensor_df = pd.read_csv(os.path.join(c.data.dir.input, "sensor_geometry.csv"))
 
-        # sensor_df["string_id"] = sensor_df["sensor_id"] // 60
-        # sensor_df["depth_id"] = sensor_df["sensor_id"] % 60
-        # # sensor_df.loc[sensor_df["string_id"] < 78, "sensor_ratio"] = 0  # main sensor
-        # # sensor_df.loc[(sensor_df["string_id"] >= 78) & (sensor_df["depth_id"] < 10), "sensor_ratio"] = 1  # Veto
-        # sensor_df.loc[(sensor_df["string_id"] >= 78) & (sensor_df["depth_id"] >= 10), "sensor_ratio"] = 1.35  # DeepCore
-        # sensor_df.loc[(sensor_df["z"] >= -155) & (sensor_df["z"] <= 0), "sensor_ratio"] = 0.6  # Dust layer
-        # sensor_df.loc[sensor_df["z"] < -155, "sensor_ratio"] = 1.05  # Second best QE
-        # sensor_df.loc[sensor_df["z"] > 0, "sensor_ratio"] = 0.9  # third best QE
-
         batch_size = 200_000
         metadata_iter = pq.ParquetFile(metadata_path).iter_batches(batch_size=batch_size)
 
@@ -107,11 +98,9 @@ def main(c):
         train_idx, valid_idx = train_test_split(all_meta_df["event_id"], test_size=0.2)
 
         train_loader = make_dataloader_batch(
-            c, -1, all_meta_df, sensor_df, collate_fn_training, train_idx, all_batch_df, is_training=True
+            c, all_meta_df, all_batch_df, collate_fn_training, train_idx, is_training=True
         )
-        valid_loader = make_dataloader_batch(
-            c, -1, all_meta_df, sensor_df, collate_fn_training, valid_idx, all_batch_df
-        )
+        valid_loader = make_dataloader_batch(c, all_meta_df, all_batch_df, collate_fn_training, valid_idx)
         log.info(f"Train size: {len(train_loader.dataset)}, Valid size: {len(valid_loader.dataset)}")
 
     else:

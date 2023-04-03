@@ -19,27 +19,14 @@ class IceCubeBatchDataset(Dataset):
     def __init__(
         self,
         c,
-        batch_id: int,
         meta_df: pd.DataFrame,
-        sensor_df: pd.DataFrame,
-        event_ids: Optional[List] = None,
-        batch_df: Optional[pd.DataFrame] = None,
+        batch_df: pd.DataFrame,
+        event_ids: Optional[Union[List, pd.Index]] = None,
     ):
         super().__init__()
         self.c = c
-        self.batch_id = batch_id
         self.meta_df = meta_df
-        self.sensor_df = sensor_df
-
-        if c.settings.is_training:
-            self.input_batch_dir = c.data.dir.input_train
-        else:
-            self.input_batch_dir = c.data.dir.input_test
-
-        if batch_df is None:
-            self.batch_df = pd.read_parquet(path=f"{self.input_batch_dir}/batch_{batch_id}.parquet").reset_index()
-        else:
-            self.batch_df = batch_df
+        self.batch_df = batch_df
 
         if event_ids is None:
             self.event_ids = self.batch_df["event_id"].unique()
@@ -49,7 +36,6 @@ class IceCubeBatchDataset(Dataset):
         self._preprocess()
 
     def _preprocess(self):
-        # self.batch_df = pd.merge(self.batch_df, self.sensor_df, on="sensor_id").sort_values("event_id")
         self.batch_df["auxiliary"] = self.batch_df["auxiliary"].replace({True: 1, False: 0})
 
     def __len__(self):
@@ -233,15 +219,13 @@ def make_sqlite_dataloader(c, database_path, selection=None):
 
 def make_dataloader_batch(
     c,
-    batch_id: int,
     meta_df: pd.DataFrame,
-    sensor_df: pd.DataFrame,
+    batch_df: pd.DataFrame,
     collate_fn: Callable,
-    event_ids: Optional[List] = None,
-    batch_df: Optional[pd.DataFrame] = None,
+    event_ids: Optional[Union[List, pd.Index]] = None,
     is_training: bool = False,
 ):
-    dataset = IceCubeBatchDataset(c, batch_id, meta_df, sensor_df, event_ids, batch_df)
+    dataset = IceCubeBatchDataset(c, meta_df, batch_df, event_ids)
 
     dataloader = DataLoader(
         dataset,
