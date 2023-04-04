@@ -54,10 +54,6 @@ def main(c):
         )
         log.info(f"Low sigma score: {score_low_sigma}, High sigma score: {score_high_sigma}")
 
-    if not c.training_params.stage2:
-        results_low_sigma.to_parquet("results_low_sigma.parquet")
-        results_high_sigma.to_parquet("results_high_sigma.parquet")
-
     log.info("Done.")
 
 

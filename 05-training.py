@@ -34,8 +34,6 @@ def main(c):
     if c.training_params.stage2:
         log.info("Stage2 training.")
         # results = pd.read_csv("results.csv").set_index("event_id")
-        # results = pd.read_parquet("results_low_sigma.parquet")
-        # results = pd.read_parquet("results_high_sigma.parquet")
         # log.info(f"Num of data: {len(results)}")
 
         metadata_path = os.path.join(c.data.dir.input, "train_meta.parquet")

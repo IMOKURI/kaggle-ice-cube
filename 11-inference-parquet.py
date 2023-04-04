@@ -37,7 +37,8 @@ def main(c):
 
     if c.training_params.stage2:
         log.info("Stage2 inference.")
-        results_stage1 = pd.read_parquet("results_low_sigma.parquet")
+        results_stage1 = pd.read_csv("results.csv").set_index("event_id")
+        results_stage1 = results_stage1[results_stage1["sigma"] <= 0.5]
 
     if c.settings.is_training:
         metadata_path = os.path.join(c.data.dir.input, "train_meta.parquet")
@@ -81,55 +82,54 @@ def main(c):
 
         log.info("Predict by default features.")
         results = model.predict(gpus=[0], dataloader=dataloader)
-        results_plus_plus = torch.cat(results, dim=1).detach().cpu().numpy()
-        results_plus_plus[:, 0:3] *= np.sqrt(results_plus_plus[:, 3]).reshape(-1, 1)
+        results = torch.cat(results, dim=1).detach().cpu().numpy()
+        results[:, 0:3] *= np.sqrt(results[:, 3]).reshape(-1, 1)
+        n_count = 1
 
         if c.inference_params.n_ensemble > 1:
+            utils.fix_seed(c.global_params.seed + 180)
             log.info("Predict by features that invert x and y.")
             if c.training_params.stage2:
                 dataloader = make_dataloader_batch(c, meta_df, batch_df, collate_fn_minus_minus, results_stage1.index)
             else:
                 dataloader = make_dataloader_batch(c, meta_df, batch_df, collate_fn_minus_minus)
-            results = model.predict(gpus=[0], dataloader=dataloader)
-            results_minus_minus = torch.cat(results, dim=1).detach().cpu().numpy()
-            results_minus_minus[:, 0] *= -1
-            results_minus_minus[:, 1] *= -1
-            results_minus_minus[:, 0:3] *= np.sqrt(results_minus_minus[:, 3]).reshape(-1, 1)
+            results_ = model.predict(gpus=[0], dataloader=dataloader)
+            results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
+            results_[:, 0] *= -1
+            results_[:, 1] *= -1
+            results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
+            results += results_
+            n_count += 1
 
-            if c.inference_params.n_ensemble > 2:
-                log.info("Predict by features that invert x.")
-                if c.training_params.stage2:
-                    dataloader = make_dataloader_batch(
-                        c, meta_df, batch_df, collate_fn_minus_plus, results_stage1.index
-                    )
-                else:
-                    dataloader = make_dataloader_batch(c, meta_df, batch_df, collate_fn_minus_plus)
-                results = model.predict(gpus=[0], dataloader=dataloader)
-                results_minus_plus = torch.cat(results, dim=1).detach().cpu().numpy()
-                results_minus_plus[:, 0] *= -1
-                results_minus_plus[:, 0:3] *= np.sqrt(results_minus_plus[:, 3]).reshape(-1, 1)
-
-                log.info("Predict by features that invert y.")
-                if c.training_params.stage2:
-                    dataloader = make_dataloader_batch(
-                        c, meta_df, batch_df, collate_fn_plus_minus, results_stage1.index
-                    )
-                else:
-                    dataloader = make_dataloader_batch(c, meta_df, batch_df, collate_fn_plus_minus)
-                results = model.predict(gpus=[0], dataloader=dataloader)
-                results_plus_minus = torch.cat(results, dim=1).detach().cpu().numpy()
-                results_plus_minus[:, 1] *= -1
-                results_plus_minus[:, 0:3] *= np.sqrt(results_plus_minus[:, 3]).reshape(-1, 1)
-
-                log.info("Ensemble 4.")
-                results = (results_plus_plus + results_minus_minus + results_minus_plus + results_plus_minus) / 4.0
-
+        if c.inference_params.n_ensemble > 2:
+            utils.fix_seed(c.global_params.seed + 90)
+            log.info("Predict by features that invert x.")
+            if c.training_params.stage2:
+                dataloader = make_dataloader_batch(c, meta_df, batch_df, collate_fn_minus_plus, results_stage1.index)
             else:
-                log.info("Ensemble 2.")
-                results = (results_plus_plus + results_minus_minus) / 2.0
+                dataloader = make_dataloader_batch(c, meta_df, batch_df, collate_fn_minus_plus)
+            results_ = model.predict(gpus=[0], dataloader=dataloader)
+            results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
+            results_[:, 0] *= -1
+            results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
+            results += results_
+            n_count += 1
 
-        else:
-            results = results_plus_plus
+            utils.fix_seed(c.global_params.seed + 270)
+            log.info("Predict by features that invert y.")
+            if c.training_params.stage2:
+                dataloader = make_dataloader_batch(c, meta_df, batch_df, collate_fn_plus_minus, results_stage1.index)
+            else:
+                dataloader = make_dataloader_batch(c, meta_df, batch_df, collate_fn_plus_minus)
+            results_ = model.predict(gpus=[0], dataloader=dataloader)
+            results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
+            results_[:, 1] *= -1
+            results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
+            results += results_
+            n_count += 1
+
+        log.info(f"Num of ensemble: {n_count}.")
+        results = results / n_count
 
         predictions.append(results)
         event_ids.append(dataloader.dataset.event_ids)
