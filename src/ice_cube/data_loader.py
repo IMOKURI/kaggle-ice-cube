@@ -236,7 +236,7 @@ def make_dataloader_batch(
 
 
 def downsample_pulse(data: Data) -> Data:
-    pulse_limit = 300
+    pulse_limit = 400
     if data.n_pulses > pulse_limit:
         data.x = data.x[np.random.choice(data.n_pulses, pulse_limit)]
         data.n_pulses = torch.tensor(pulse_limit, dtype=torch.int32)
