@@ -31,12 +31,12 @@ def main(c):
 
     if c.settings.is_training:
         score = angular_dist_score(
-            results["azimuth_y"], results["zenith_y"], submission_df["azimuth"], submission_df["zenith"]
+            results["azimuth_y"], results["zenith_y"], results["azimuth_x"], results["zenith_x"]
         )
         log.info(f"Base score: {score}")
 
-    results_low_sigma = results[results["sigma"] <= 0.5]
-    results_high_sigma = results[results["sigma"] > 0.5]
+    results_low_sigma = results[results["sigma"] <= c.inference_params.sigma_border]
+    results_high_sigma = results[results["sigma"] > c.inference_params.sigma_border]
     log.info(f"Num of low sigma events: {len(results_low_sigma)}, Num of high sigma events: {len(results_high_sigma)}")
 
     if c.settings.is_training:

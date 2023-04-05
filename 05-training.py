@@ -10,7 +10,7 @@ from pytorch_lightning.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split
 
 import src.utils as utils
-from src.ice_cube.data_loader import collate_fn_training, make_dataloader_batch, make_sqlite_dataloader
+from src.ice_cube.data_loader import CollateFn, make_dataloader_batch, make_sqlite_dataloader
 from src.ice_cube.model import build_model, load_pretrained_model
 from src.preprocess import preprocess
 
@@ -94,9 +94,9 @@ def main(c):
         train_idx, valid_idx = train_test_split(all_meta_df["event_id"], test_size=0.2)
 
         train_loader = make_dataloader_batch(
-            c, all_meta_df, all_batch_df, collate_fn_training, train_idx, is_training=True
+            c, all_meta_df, all_batch_df, CollateFn(is_training=True), train_idx, is_training=True
         )
-        valid_loader = make_dataloader_batch(c, all_meta_df, all_batch_df, collate_fn_training, valid_idx)
+        valid_loader = make_dataloader_batch(c, all_meta_df, all_batch_df, CollateFn(is_training=True), valid_idx)
         log.info(f"Train size: {len(train_loader.dataset)}, Valid size: {len(valid_loader.dataset)}")
 
     else:

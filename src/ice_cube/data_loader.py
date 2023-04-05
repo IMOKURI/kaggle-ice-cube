@@ -235,63 +235,30 @@ def make_dataloader_batch(
     return dataloader
 
 
-def downsample_pulse(data: Data) -> Data:
-    pulse_limit = 400
-    if data.n_pulses > pulse_limit:
-        data.x = data.x[np.random.choice(data.n_pulses, pulse_limit)]
-        data.n_pulses = torch.tensor(pulse_limit, dtype=torch.int32)
-    return data
+class CollateFn:
+    def __init__(self, x=1, y=1, z=1, pulse_limit=400, is_training=False):
+        self.x = x
+        self.y = y
+        self.z = z
+        self.pulse_limit = pulse_limit
+        self.is_training = is_training
 
+    def downsample_pulse(self, data: Data) -> Data:
+        if data.n_pulses > self.pulse_limit:
+            data.x = data.x[np.random.choice(data.n_pulses, self.pulse_limit)]
+            data.n_pulses = torch.tensor(self.pulse_limit, dtype=torch.int32)
+        return data
 
-def collate_fn(graphs: List[Data]):
-    graphs = [downsample_pulse(g) for g in graphs if g.n_pulses > 1]
-    # graphs = [g for g in graphs if g.n_pulses > 1]
-    return Batch.from_data_list(graphs)
+    def __call__(self, graphs: List[Data]):
+        batch = []
+        for data in graphs:
+            if isinstance(self.pulse_limit, int):
+                data = self.downsample_pulse(data)
+            data.x = torch.mul(data.x, torch.FloatTensor([self.x, self.y, self.z, 1, 1, 1]))
 
+            if self.is_training:
+                data["direction"] = Direction()(data)
+            if data.n_pulses > 1:
+                batch.append(data)
 
-def collate_fn_training(graphs: List[Data]):
-    batch = []
-    for data in graphs:
-        data = downsample_pulse(data)
-        data["direction"] = Direction()(data)
-
-        if data.n_pulses > 1:
-            batch.append(data)
-
-    return Batch.from_data_list(batch)
-
-
-def collate_fn_minus_minus(graphs: List[Data]):
-    batch = []
-    for data in graphs:
-        data = downsample_pulse(data)
-        data.x = torch.mul(data.x, torch.FloatTensor([-1, -1, 1, 1, 1, 1]))
-
-        if data.n_pulses > 1:
-            batch.append(data)
-
-    return Batch.from_data_list(batch)
-
-
-def collate_fn_plus_minus(graphs: List[Data]):
-    batch = []
-    for data in graphs:
-        data = downsample_pulse(data)
-        data.x = torch.mul(data.x, torch.FloatTensor([1, -1, 1, 1, 1, 1]))
-
-        if data.n_pulses > 1:
-            batch.append(data)
-
-    return Batch.from_data_list(batch)
-
-
-def collate_fn_minus_plus(graphs: List[Data]):
-    batch = []
-    for data in graphs:
-        data = downsample_pulse(data)
-        data.x = torch.mul(data.x, torch.FloatTensor([-1, 1, 1, 1, 1, 1]))
-
-        if data.n_pulses > 1:
-            batch.append(data)
-
-    return Batch.from_data_list(batch)
+        return Batch.from_data_list(batch)

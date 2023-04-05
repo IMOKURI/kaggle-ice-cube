@@ -23,19 +23,20 @@ def main(c):
 
     results.loc[results_stage2.index, :] = (results[results.index.isin(results_stage2.index)] + results_stage2) / 2.0
     submission_df = to_submission_df(results.reset_index())
-    # TODO: submission to_csv
+    submission_df.to_csv("submission.csv")
 
     if c.settings.is_training:
         score = angular_dist_score(
-            results["azimuth_y"], results["zenith_y"], submission_df["azimuth"], submission_df["zenith"]
+            results["azimuth_y"], results["zenith_y"], results["azimuth_x"], results["zenith_x"]
         )
         log.info(f"Base score: {score}")
 
-    results_low_sigma = results[results["sigma"] <= 0.5]
-    results_high_sigma = results[results["sigma"] > 0.5]
-    log.info(f"Num of low sigma events: {len(results_low_sigma)}, Num of high sigma events: {len(results_high_sigma)}")
+        results_low_sigma = results[results["sigma"] <= c.inference_params.sigma_border]
+        results_high_sigma = results[results["sigma"] > c.inference_params.sigma_border]
+        log.info(
+            f"Num of low sigma events: {len(results_low_sigma)}, Num of high sigma events: {len(results_high_sigma)}"
+        )
 
-    if c.settings.is_training:
         score_low_sigma = angular_dist_score(
             results_low_sigma["azimuth_y"],
             results_low_sigma["zenith_y"],
