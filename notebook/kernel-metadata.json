@@ -11,7 +11,8 @@
   "keywords": [],
   "dataset_sources": [
     "imokuri/hydra-core",
-    "rasmusrse/dynedge-pretrained"
+    "rasmusrse/dynedge-pretrained",
+    "hideyauehara/icecube"
   ],
   "kernel_sources": [
     "rasmusrse/graphnet-and-dependencies"
