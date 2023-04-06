@@ -164,10 +164,11 @@ def main(c):
         validations_df = pd.concat(validations_df)
         predictions_df.loc[:, "sigma"] = 1 / np.sqrt(predictions_df["direction_kappa"])
         predictions_df = pd.merge(predictions_df, validations_df, on=["event_id"]).sort_values("event_id")
-        if c.training_params.stage2:
-            predictions_df.to_csv("results_stage2.csv")
-        else:
-            predictions_df.to_csv("results.csv")
+
+    if c.training_params.stage2:
+        predictions_df.to_csv("results_stage2.csv")
+    else:
+        predictions_df.to_csv("results.csv")
 
     log.info(f"results columns: {predictions_df.columns}")
     log.info(f"submission columns: {submission_df.columns}")
