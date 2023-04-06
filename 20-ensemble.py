@@ -21,14 +21,20 @@ def main(c):
     results = pd.read_csv("results.csv").set_index("event_id")
     results_stage2 = pd.read_csv("results_stage2.csv").set_index("event_id")
 
-    results.loc[results_stage2.index, :] = (results[results.index.isin(results_stage2.index)] + results_stage2) / 2.0
+    if (results.index == results_stage2.index).all():
+        log.info("Results has same index.")
+        results = (results + results_stage2) / 2.0
+    else:
+        log.info("Results has different index.")
+        results.loc[results_stage2.index, :] = (
+            results[results.index.isin(results_stage2.index)] + results_stage2
+        ) / 2.0
+
     submission_df = to_submission_df(results.reset_index())
     submission_df.to_csv("submission.csv")
 
     if c.settings.is_training:
-        score = angular_dist_score(
-            results["azimuth_y"], results["zenith_y"], results["azimuth_x"], results["zenith_x"]
-        )
+        score = angular_dist_score(results["azimuth_y"], results["zenith_y"], results["azimuth_x"], results["zenith_x"])
         log.info(f"Base score: {score}")
 
         results_low_sigma = results[results["sigma"] <= c.inference_params.sigma_border]
