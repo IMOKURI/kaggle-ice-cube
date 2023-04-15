@@ -76,15 +76,26 @@ def main(c):
             dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn())
             model = load_pretrained_model(c, dataloader, state_dict_path=c.inference_params.model_path)
 
-        log.info("Predict by default features.")
+        log.info("Predict by default features with pulse cut.")
         results = model.predict(gpus=[0], dataloader=dataloader)
         results = torch.cat(results, dim=1).detach().cpu().numpy()
         results[:, 0:3] *= np.sqrt(results[:, 3]).reshape(-1, 1)
         n_count = 1
 
+        log.info("Predict by default features.")
+        dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(pulse_limit=None))
+        results_ = model.predict(gpus=[0], dataloader=dataloader)
+        results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
+        results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
+        results += results_
+        n_count += 1
+
+
+
+
         if c.inference_params.n_ensemble > 1:
             utils.fix_seed(c.global_params.seed + 180)
-            log.info("Predict by features that invert x and y.")
+            log.info("Predict by features that invert x and y with pulse cut.")
             if c.training_params.stage2:
                 dataloader = make_dataloader_batch(
                     c, meta_df, batch_df, CollateFn(x=-1, y=-1), results_stage1.index
@@ -99,9 +110,19 @@ def main(c):
             results += results_
             n_count += 1
 
+            log.info("Predict by features that invert x and y.")
+            dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(x=-1, y=-1, pulse_limit=None))
+            results_ = model.predict(gpus=[0], dataloader=dataloader)
+            results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
+            results_[:, 0] *= -1
+            results_[:, 1] *= -1
+            results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
+            results += results_
+            n_count += 1
+
         if c.inference_params.n_ensemble > 2:
             utils.fix_seed(c.global_params.seed + 90)
-            log.info("Predict by features that invert x.")
+            log.info("Predict by features that invert x with pulse cut.")
             if c.training_params.stage2:
                 dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(x=-1), results_stage1.index)
             else:
@@ -113,12 +134,30 @@ def main(c):
             results += results_
             n_count += 1
 
+            log.info("Predict by features that invert x.")
+            dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(x=-1, pulse_limit=None))
+            results_ = model.predict(gpus=[0], dataloader=dataloader)
+            results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
+            results_[:, 0] *= -1
+            results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
+            results += results_
+            n_count += 1
+
             utils.fix_seed(c.global_params.seed + 270)
-            log.info("Predict by features that invert y.")
+            log.info("Predict by features that invert y with pulse cut.")
             if c.training_params.stage2:
                 dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(y=-1), results_stage1.index)
             else:
                 dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(y=-1))
+            results_ = model.predict(gpus=[0], dataloader=dataloader)
+            results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
+            results_[:, 1] *= -1
+            results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
+            results += results_
+            n_count += 1
+
+            log.info("Predict by features that invert y.")
+            dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(y=-1, pulse_limit=None))
             results_ = model.predict(gpus=[0], dataloader=dataloader)
             results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
             results_[:, 1] *= -1
