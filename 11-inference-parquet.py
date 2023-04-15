@@ -70,7 +70,7 @@ def main(c):
         batch_df = preprocess(c, batch_df, "batch")
 
         if c.training_params.stage2:
-            dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(z=-1), results_stage1.index)
+            dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(), results_stage1.index)
             model = load_pretrained_model(c, dataloader, state_dict_path=c.inference_params.model_path_stage2)
         else:
             dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn())
@@ -79,8 +79,6 @@ def main(c):
         log.info("Predict by default features.")
         results = model.predict(gpus=[0], dataloader=dataloader)
         results = torch.cat(results, dim=1).detach().cpu().numpy()
-        if c.training_params.stage2:
-            results[:, 2] *= -1
         results[:, 0:3] *= np.sqrt(results[:, 3]).reshape(-1, 1)
         n_count = 1
 
@@ -89,7 +87,7 @@ def main(c):
             log.info("Predict by features that invert x and y.")
             if c.training_params.stage2:
                 dataloader = make_dataloader_batch(
-                    c, meta_df, batch_df, CollateFn(x=-1, y=-1, z=-1), results_stage1.index
+                    c, meta_df, batch_df, CollateFn(x=-1, y=-1), results_stage1.index
                 )
             else:
                 dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(x=-1, y=-1))
@@ -97,8 +95,6 @@ def main(c):
             results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
             results_[:, 0] *= -1
             results_[:, 1] *= -1
-            if c.training_params.stage2:
-                results_[:, 2] *= -1
             results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
             results += results_
             n_count += 1
@@ -107,14 +103,12 @@ def main(c):
             utils.fix_seed(c.global_params.seed + 90)
             log.info("Predict by features that invert x.")
             if c.training_params.stage2:
-                dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(x=-1, z=-1), results_stage1.index)
+                dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(x=-1), results_stage1.index)
             else:
                 dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(x=-1))
             results_ = model.predict(gpus=[0], dataloader=dataloader)
             results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
             results_[:, 0] *= -1
-            if c.training_params.stage2:
-                results_[:, 2] *= -1
             results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
             results += results_
             n_count += 1
@@ -122,14 +116,12 @@ def main(c):
             utils.fix_seed(c.global_params.seed + 270)
             log.info("Predict by features that invert y.")
             if c.training_params.stage2:
-                dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(y=-1, z=-1), results_stage1.index)
+                dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(y=-1), results_stage1.index)
             else:
                 dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(y=-1))
             results_ = model.predict(gpus=[0], dataloader=dataloader)
             results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
             results_[:, 1] *= -1
-            if c.training_params.stage2:
-                results_[:, 2] *= -1
             results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
             results += results_
             n_count += 1

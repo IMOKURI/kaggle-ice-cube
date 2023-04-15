@@ -21,10 +21,11 @@ def main(c):
     results = pd.read_csv("results.csv").set_index("event_id")
     results_stage2 = pd.read_csv("results_stage2.csv").set_index("event_id")
 
-    if (results.index == results_stage2.index).all():
+    try:
+        assert (results.index == results_stage2.index).all()
         log.info("Results has same index.")
         results = (results + results_stage2) / 2.0
-    else:
+    except (AssertionError, ValueError):
         log.info("Results has different index.")
         results.loc[results_stage2.index, :] = (
             results[results.index.isin(results_stage2.index)] + results_stage2

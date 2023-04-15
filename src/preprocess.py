@@ -23,7 +23,10 @@ def preprocess(c, df: pd.DataFrame, stem: str) -> pd.DataFrame:
         pp = DistTransformer(transform="yeo-johnson", verbose=True)
         df.loc[:, ["charge"]] = pp.fit_transform(df.loc[:, ["charge"]])
 
-    df.loc[:, ["auxiliary"]] = df["auxiliary"].replace({True: 1, False: 0})
+    if c.training_params.stage2:
+        df.loc[:, ["auxiliary"]] = df["auxiliary"].replace({True: 1, False: 1})
+    else:
+        df.loc[:, ["auxiliary"]] = df["auxiliary"].replace({True: 1, False: 0})
 
     # Convert None to NaN
     # df = df.fillna(np.nan)
