@@ -134,14 +134,14 @@ def main(c):
             results += results_
             n_count += 1
 
-            log.info("Predict by features that invert x.")
-            dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(x=-1, pulse_limit=None))
-            results_ = model.predict(gpus=[0], dataloader=dataloader)
-            results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
-            results_[:, 0] *= -1
-            results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
-            results += results_
-            n_count += 1
+            # log.info("Predict by features that invert x.")
+            # dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(x=-1, pulse_limit=None))
+            # results_ = model.predict(gpus=[0], dataloader=dataloader)
+            # results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
+            # results_[:, 0] *= -1
+            # results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
+            # results += results_
+            # n_count += 1
 
             utils.fix_seed(c.global_params.seed + 270)
             log.info("Predict by features that invert y with pulse cut.")
@@ -156,14 +156,14 @@ def main(c):
             results += results_
             n_count += 1
 
-            log.info("Predict by features that invert y.")
-            dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(y=-1, pulse_limit=None))
-            results_ = model.predict(gpus=[0], dataloader=dataloader)
-            results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
-            results_[:, 1] *= -1
-            results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
-            results += results_
-            n_count += 1
+            # log.info("Predict by features that invert y.")
+            # dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(y=-1, pulse_limit=None))
+            # results_ = model.predict(gpus=[0], dataloader=dataloader)
+            # results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
+            # results_[:, 1] *= -1
+            # results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
+            # results += results_
+            # n_count += 1
 
         log.info(f"Num of ensemble: {n_count}.")
         results = results / n_count
