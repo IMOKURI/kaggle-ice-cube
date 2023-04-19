@@ -73,13 +73,17 @@ def main(c):
             dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(), results_stage1.index)
             model = load_pretrained_model(c, dataloader, state_dict_path=c.inference_params.model_path_stage2)
         else:
-            dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn())
+            log.info(f"Pulse limit: {c.inference_params.pulse_limit}")
+            dataloader = make_dataloader_batch(
+                c, meta_df, batch_df, CollateFn(pulse_limit=c.inference_params.pulse_limit)
+            )
             model = load_pretrained_model(c, dataloader, state_dict_path=c.inference_params.model_path)
 
         log.info("Predict by default features with pulse cut.")
         results = model.predict(gpus=[0], dataloader=dataloader)
         results = torch.cat(results, dim=1).detach().cpu().numpy()
-        results[:, 0:3] *= np.sqrt(results[:, 3]).reshape(-1, 1)
+        if c.inference_params.kappa_weight:
+            results[:, 0:3] *= np.sqrt(results[:, 3]).reshape(-1, 1)
         n_count = 1
 
         # log.info("Predict by default features.")
@@ -96,12 +100,15 @@ def main(c):
             if c.training_params.stage2:
                 dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(x=-1, y=-1), results_stage1.index)
             else:
-                dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(x=-1, y=-1))
+                dataloader = make_dataloader_batch(
+                    c, meta_df, batch_df, CollateFn(x=-1, y=-1, pulse_limit=c.inference_params.pulse_limit)
+                )
             results_ = model.predict(gpus=[0], dataloader=dataloader)
             results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
             results_[:, 0] *= -1
             results_[:, 1] *= -1
-            results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
+            if c.inference_params.kappa_weight:
+                results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
             results += results_
             n_count += 1
 
@@ -121,11 +128,14 @@ def main(c):
             if c.training_params.stage2:
                 dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(x=-1), results_stage1.index)
             else:
-                dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(x=-1))
+                dataloader = make_dataloader_batch(
+                    c, meta_df, batch_df, CollateFn(x=-1, pulse_limit=c.inference_params.pulse_limit)
+                )
             results_ = model.predict(gpus=[0], dataloader=dataloader)
             results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
             results_[:, 0] *= -1
-            results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
+            if c.inference_params.kappa_weight:
+                results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
             results += results_
             n_count += 1
 
@@ -143,11 +153,14 @@ def main(c):
             if c.training_params.stage2:
                 dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(y=-1), results_stage1.index)
             else:
-                dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(y=-1))
+                dataloader = make_dataloader_batch(
+                    c, meta_df, batch_df, CollateFn(y=-1, pulse_limit=c.inference_params.pulse_limit)
+                )
             results_ = model.predict(gpus=[0], dataloader=dataloader)
             results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
             results_[:, 1] *= -1
-            results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
+            if c.inference_params.kappa_weight:
+                results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
             results += results_
             n_count += 1
 
