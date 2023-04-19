@@ -236,7 +236,7 @@ def make_dataloader_batch(
 
 
 class CollateFn:
-    def __init__(self, x=1, y=1, z=1, pulse_limit=400, is_training=False):
+    def __init__(self, x=1, y=1, z=1, pulse_limit=300, is_training=False):
         self.x = x
         self.y = y
         self.z = z
