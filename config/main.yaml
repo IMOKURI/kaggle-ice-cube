@@ -86,7 +86,7 @@ inference_params:
   n_ensemble: 4
   pulse_limit: 300
   sigma_border: 0.5
-  kappa_weight: False
+  kappa_weight: True
   # model_path: "dynedge-pretrained/dynedge_pretrained_batch_1_to_50/state_dict.pth"
   model_path: "icecube/model_1_150.pth"
   model_path_stage2: "icecube/model_1_100.pth"

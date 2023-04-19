@@ -86,13 +86,14 @@ def main(c):
             results[:, 0:3] *= np.sqrt(results[:, 3]).reshape(-1, 1)
         n_count = 1
 
-        # log.info("Predict by default features.")
-        # dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(pulse_limit=None))
-        # results_ = model.predict(gpus=[0], dataloader=dataloader)
-        # results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
-        # results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
-        # results += results_
-        # n_count += 1
+        log.info("Predict by default features.")
+        dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(pulse_limit=None))
+        results_ = model.predict(gpus=[0], dataloader=dataloader)
+        results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
+        if c.inference_params.kappa_weight:
+            results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
+        results += results_
+        n_count += 1
 
         if c.inference_params.n_ensemble > 1:
             utils.fix_seed(c.global_params.seed + 180)
@@ -112,15 +113,16 @@ def main(c):
             results += results_
             n_count += 1
 
-            # log.info("Predict by features that invert x and y.")
-            # dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(x=-1, y=-1, pulse_limit=None))
-            # results_ = model.predict(gpus=[0], dataloader=dataloader)
-            # results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
-            # results_[:, 0] *= -1
-            # results_[:, 1] *= -1
-            # results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
-            # results += results_
-            # n_count += 1
+            log.info("Predict by features that invert x and y.")
+            dataloader = make_dataloader_batch(c, meta_df, batch_df, CollateFn(x=-1, y=-1, pulse_limit=None))
+            results_ = model.predict(gpus=[0], dataloader=dataloader)
+            results_ = torch.cat(results_, dim=1).detach().cpu().numpy()
+            results_[:, 0] *= -1
+            results_[:, 1] *= -1
+            if c.inference_params.kappa_weight:
+                results_[:, 0:3] *= np.sqrt(results_[:, 3]).reshape(-1, 1)
+            results += results_
+            n_count += 1
 
         if c.inference_params.n_ensemble > 2:
             utils.fix_seed(c.global_params.seed + 90)
